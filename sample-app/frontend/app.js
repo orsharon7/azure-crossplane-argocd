@@ -6,6 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = document.createElement('p');
         message.textContent = 'Button clicked!';
         contentSection.appendChild(message);
+        generateAIContent();
     });
     contentSection.appendChild(button);
 });
+
+function generateAIContent() {
+    const aiContentSection = document.getElementById('ai-content');
+    const aiMessage = document.createElement('p');
+    aiMessage.textContent = 'This is AI-generated content!';
+    aiContentSection.appendChild(aiMessage);
+}
