@@ -5,19 +5,59 @@ metadata:
 data:
   index.html: |
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sample App</title>
+        <link rel="stylesheet" href="styles.css">
       </head>
       <body>
-        <h1>Hello from Sample App</h1>
+        <div class="container">
+          <header>
+            <h1>Welcome to the Sample App</h1>
+          </header>
+          <main>
+            <p>This is a modern and sleek web application.</p>
+          </main>
+          <footer>
+            <p>&copy; 2023 Sample App. All rights reserved.</p>
+          </footer>
+        </div>
         <script src="app.js"></script>
       </body>
     </html>
   app.js: |
-    console.log("Sample App is running");
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log("Sample App is running");
+    });
   styles.css: |
     body {
-      background-color: #f4f4f4;
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #f06, #f79);
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      color: #f06;
+    }
+    main p {
+      font-size: 1.2rem;
+    }
+    footer p {
+      font-size: 0.8rem;
+      color: #666;
     }
