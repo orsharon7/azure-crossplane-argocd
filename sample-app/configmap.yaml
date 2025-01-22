@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Sample App</title>
+      </head>
+      <body>
+        <h1>Hello from Sample App</h1>
+        <script src="app.js"></script>
+      </body>
+    </html>
+  app.js: |
+    console.log("Sample App is running");
+  styles.css: |
+    body {
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
