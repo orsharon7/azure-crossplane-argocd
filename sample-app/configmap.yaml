@@ -9,7 +9,7 @@ data:
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sample App</title>
+        <title>Sample App with AI Design</title>
         <link rel="stylesheet" href="styles.css">
       </head>
       <body>
@@ -18,24 +18,48 @@ data:
             <h1>Welcome to the Sample App</h1>
           </header>
           <main>
-            <p>This is a modern and sleek web application.</p>
+            <section id="content">
+              <p>This is a modern and sleek web application.</p>
+            </section>
+            <section id="ai-content">
+              <h2>AI-Generated Content</h2>
+              <p>This section will be populated with AI-generated content.</p>
+            </section>
           </main>
           <footer>
             <p>&copy; 2023 Sample App. All rights reserved.</p>
           </footer>
         </div>
         <script src="app.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/ai-library/ai-library.min.js"></script>
       </body>
     </html>
   app.js: |
     document.addEventListener('DOMContentLoaded', () => {
       console.log("Sample App is running");
+      const contentSection = document.getElementById('content');
+      const button = document.createElement('button');
+      button.textContent = 'Click Me';
+      button.addEventListener('click', () => {
+        const message = document.createElement('p');
+        message.textContent = 'Button clicked!';
+        contentSection.appendChild(message);
+        generateAIContent();
+      });
+      contentSection.appendChild(button);
     });
+
+    function generateAIContent() {
+      const aiContentSection = document.getElementById('ai-content');
+      const aiMessage = document.createElement('p');
+      aiMessage.textContent = 'This is AI-generated content!';
+      aiContentSection.appendChild(aiMessage);
+    }
   styles.css: |
     body {
       margin: 0;
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(135deg, #f06, #f79);
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
       color: #333;
       display: flex;
       justify-content: center;
@@ -59,5 +83,26 @@ data:
     }
     footer p {
       font-size: 0.8rem;
+      color: #666;
+    }
+    #content {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    #ai-content {
+      background-color: #f0f0f0;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-top: 2rem;
+    }
+    #ai-content h2 {
+      font-size: 1.5rem;
+      color: #4CAF50;
+    }
+    #ai-content p {
+      font-size: 1rem;
       color: #666;
     }
