@@ -4,6 +4,6 @@ metadata:
   name: provider-azure-network
 spec:
   package: xpkg.upbound.io/upbound/provider-azure-network:v1
-  packagePullPolicy: Always
+  packagePullPolicy: IfNotPresent
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 1

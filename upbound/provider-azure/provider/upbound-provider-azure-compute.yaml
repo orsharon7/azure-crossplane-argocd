@@ -4,6 +4,6 @@ metadata:
   name: provider-azure-compute
 spec:
   package: xpkg.upbound.io/upbound/provider-azure-compute:v1
-  packagePullPolicy: Always
+  packagePullPolicy: IfNotPresent
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 1
