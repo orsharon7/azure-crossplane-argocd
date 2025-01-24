@@ -1,0 +1,6 @@
+# Kustomization for all resources in the azure subdirectory
+---
+resources:
+  - composition.yaml
+  - virtual-network.yaml
+  - storage-account.yaml

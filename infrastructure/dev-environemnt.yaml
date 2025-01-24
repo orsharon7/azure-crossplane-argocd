@@ -1,14 +1,19 @@
+# ArgoCD Application for the development environment provisioned by Crossplane
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: dev-environment-22
+  name: dev-environment-${{ github.actor }}-${{ github.event.issue.number }}
   namespace: argocd
+  labels:
+    developer: ${{ github.actor }}
+    issue-id: ${{ github.event.issue.number }}
   finalizers:
-  - resources-finalizer.argocd.argoproj.io
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/orsharon7/sample-app.git'
+    repoURL: 'https://github.com/orsharon7/sample-app'
     targetRevision: HEAD
     path: infrastructure/azure
   destination:
@@ -20,3 +25,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+    retry:
+      limit: 1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 20m

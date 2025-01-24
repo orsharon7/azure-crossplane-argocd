@@ -1,10 +1,15 @@
+# Virtual Network resource definition
+---
 apiVersion: network.azure.upbound.io/v1beta1
 kind: VirtualNetwork
 metadata:
-  name: azure-virtual-network
+  name: virtual-network-{{ .parameters.resourceGroup }}
+  labels:
+    developer: ${{ github.actor }}
+    issue-id: ${{ github.event.issue.number }}
 spec:
   forProvider:
     addressSpace:
       - 10.1.0.0/16
-    location: "Sweden Central"
-    resourceGroupName: crossplane-lab
+    location: "{{ .parameters.region }}"
+    resourceGroupName: "{{ .parameters.resourceGroup }}"
