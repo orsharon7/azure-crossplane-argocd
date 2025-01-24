@@ -1,5 +1,0 @@
-# Kustomization for all resources in the azure subdirectory
----
-resources:
-  - azure-virtual-network.yaml
-  - azure-storage-account.yaml
