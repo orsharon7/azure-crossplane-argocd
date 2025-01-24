@@ -1,2 +1,3 @@
 argocd/azure-crendentials.yaml
 argocd/azure-credentials.json
+.DS_Store
