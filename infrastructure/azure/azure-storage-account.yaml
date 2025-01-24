@@ -1,0 +1,16 @@
+# Storage Account resource definition
+---
+apiVersion: storage.azure.upbound.io/v1beta1
+kind: Account
+metadata:
+  name: storageacct{{ .parameters.resourceGroup | lower | replaceAll \"-\" \"\" }} # Azure-compliant naming
+  labels:
+    developer: ${{ github.actor }}
+    issue-id: ${{ github.event.issue.number }}
+spec:
+  forProvider:
+    location: "{{ .parameters.region }}"
+    resourceGroupName: "{{ .parameters.resourceGroup }}"
+    accountKind: StorageV2
+    accountTier: Standard
+    accountReplicationType: LRS
