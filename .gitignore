@@ -1,4 +1,4 @@
 argocd/azure-crendentials.yaml
 argocd/azure-credentials.json
 .DS_Store
-dev-environment-test.yaml
+dev-environment*
