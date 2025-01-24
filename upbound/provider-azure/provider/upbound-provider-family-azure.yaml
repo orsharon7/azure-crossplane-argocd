@@ -3,7 +3,7 @@ kind: Provider
 metadata:
   name: provider-family-azure
 spec:
-  package: xpkg.upbound.io/upbound/provider-family-azure:v1.2.0
+  package: xpkg.upbound.io/upbound/provider-family-azure:v1
   packagePullPolicy: IfNotPresent
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 1
