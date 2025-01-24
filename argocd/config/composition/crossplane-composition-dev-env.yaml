@@ -1,31 +1,23 @@
-# ArgoCD Application for Crossplane Composition: DevEnvironment
----
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
 metadata:
-  name: crossplane-composition-dev-env
-  namespace: argocd
+  name: azure-dev-environment
   labels:
-    app: crossplane-composition-dev-env
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "4" # Runs after the XRD
+    purpose: dev-environment
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/orsharon7/sample-app
-    targetRevision: HEAD
-    path: argocd/crossplane-bootstrap/composition
-  destination:
-    namespace: default
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      prune: true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 1m
+  compositeTypeRef:
+    apiVersion: dev.azure.upbound.io/v1alpha1
+    kind: DevEnvironment
+  resources:
+    - name: virtual-network
+      base:
+        apiVersion: network.azure.upbound.io/v1beta1
+        kind: VirtualNetwork
+        metadata:
+          name: "{{ .parameters.virtualNetworkName }}"
+        spec:
+          forProvider:
+            addressSpace:
+              - 10.0.0.0/16
+            location: "{{ .parameters.region }}"
+            resourceGroupName: "{{ .parameters.resourceGroup }}"
