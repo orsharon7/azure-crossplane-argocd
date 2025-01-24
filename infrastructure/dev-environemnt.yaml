@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/orsharon7/sample-app.git'
+    repoURL: 'https://github.com/orsharon7/sample-app'
     targetRevision: HEAD
     path: infrastructure/azure
   destination:
