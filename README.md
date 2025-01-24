@@ -130,3 +130,9 @@ In our case, we’re focusing on bootstrapping our cluster, which makes the App 
 ```sh
 kubectl apply -f argocd/crossplane-bootstrap.yaml
 ```
+
+
+### Deploy Developer Environemnt
+```sh
+kubectl apply -f infrastructure/dev-environemnt.yaml
+```
