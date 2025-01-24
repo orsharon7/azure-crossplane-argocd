@@ -8,6 +8,7 @@ metadata:
   labels:
     developer: ${{ github.actor }}
     issue-id: ${{ github.event.issue.number }}
+    environment: "dev"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
