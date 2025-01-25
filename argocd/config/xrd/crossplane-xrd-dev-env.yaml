@@ -30,5 +30,7 @@ spec:
                       type: string
                     issueId:
                       type: string
+                    storeageAccountName:
+                      type: string
   defaultCompositionRef:
     name: azure-dev-environment

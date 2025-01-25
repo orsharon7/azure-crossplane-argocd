@@ -70,7 +70,6 @@ spec:
         apiVersion: storage.azure.upbound.io/v1beta1
         kind: Account
         metadata:
-          # We'll apply naming transforms to produce a valid name
           name: ""
         spec:
           forProvider:
@@ -91,22 +90,5 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
 
         # (C) Patch resourceGroup param -> metadata.name with transforms
-        - fromFieldPath: "spec.parameters.resourceGroup"
+        - fromFieldPath: "spec.parameters.storeageAccountName"
           toFieldPath: "metadata.name"
-          transforms:
-            # 1) Convert to lowercase
-            - type: string
-              string:
-                toLower: true
-
-            # 2) Strip invalid characters (only [a-z0-9] remain)
-            - type: string
-              string:
-                regexp:
-                  match: "[^a-z0-9]"
-                  replace: ""
-
-            # 3) Prepend "storacct" (no dash!) to avoid non-alphanumeric chars
-            - type: string
-              string:
-                fmt: "storacct%s"
