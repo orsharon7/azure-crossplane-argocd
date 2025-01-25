@@ -100,7 +100,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.set_branch_name.outputs.branch_nam }}
+          branch: ${{ steps.set_branch_name.outputs.branch_name }}
           base: "main"
           title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
