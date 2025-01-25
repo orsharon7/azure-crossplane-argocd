@@ -1,0 +1,11 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: test-developer-env-eastus-123
+spec:
+  parameters:
+    region: eastus
+    resourceGroup: test-resource-group
+    developer: test-developer
+    issueId: "123"
+    storeageAccountName: stestdevelopersa123
