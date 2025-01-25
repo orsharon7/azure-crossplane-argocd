@@ -62,13 +62,17 @@ jobs:
         id: set_branch_name
         run: echo "branch_name=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
 
+      - name: Create and switch to a new branch
+        run: |
+          git checkout -b ${{ steps.set_branch_name.outputs.branch_name }}
+
       - name: Create or Update DevEnvironment File
         id: create_dev_env_file
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
           TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
           RG_NAME="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
-          STORAGE_ACCOUNT_NAME="$(echo dev${{ inputs.unique_id }}$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16) | head -c 24)"
+          SSTORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
           
           mkdir -p infrastructure/azure/dev-envs
 
@@ -84,15 +88,11 @@ jobs:
 
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
 
-      - name: Commit and Push Changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: github-actions[bot]
-          author_email: github-actions[bot]@users.noreply.github.com
-          message: "Add DevEnvironment file for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
-          new_branch: ${{ steps.set_branch_name.outputs.branch_name }}
-          push: true
-          add: ${{ steps.create_dev_env_file.outputs.file_path }}
+      - name: Stage, Commit, and Push Changes
+        run: |
+          git add .
+          git commit -m "Add DevEnvironment file for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+          git push --set-upstream origin ${{ steps.set_branch_name.outputs.branch_name }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
