@@ -28,12 +28,6 @@ on:
       run_id:
         required: true
         type: string
-      crossplane_aks_cluster:
-        required: false
-        type: string
-      crossplane_aks_cluster_rg:
-        required: false
-        type: string
 
 jobs:
   provision:
@@ -54,13 +48,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # Step 2: Set up Git configuration
+      # Step 2: Set up Git
       - name: Set up Git
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-      # Step 3: Set branch name dynamically
+      # Step 3: Set branch name
       - name: Set branch name
         id: set_branch_name
         run: echo "branch_name=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
@@ -72,47 +66,40 @@ jobs:
 
       # Step 5: Create or update the DevEnvironment file
       - name: Create or Update DevEnvironment File
-        id: create_dev_env_file
         run: |
-          # Set file paths and environment variables
           export FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
           export TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
           export REGION="${{ inputs.region }}"
           export RESOURCE_GROUP="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
           export STORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
+          export GITHUB_EVENT_ISSUE_NUMBER="${{ inputs.issue_number }}"
+          export 
           
-          # Create the directory and the file
           mkdir -p $(dirname "$FILE_PATH")
           envsubst < $TEMPLATE_PATH > $FILE_PATH
 
-          # Debugging output
           echo "Created file at: $FILE_PATH"
           cat $FILE_PATH
 
-      # Step 6: Debug before committing
-      - name: Debug Verify Git Status Before Commit
-        run: |
-          echo "Checking Git status before commit..."
-          git status
-          echo "Listing directory contents:"
-          ls -la infrastructure/azure/dev-envs/
-
-      # Step 7: Commit and push changes
-      - name: Commit and Push Changes
+      # Step 6: Stage and commit the file
+      - name: Commit changes
         run: |
           git add infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml
-          git status
           git commit -m "Add DevEnvironment file for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+
+      # Step 7: Push the branch to GitHub
+      - name: Push changes
+        run: |
           git push --set-upstream origin ${{ steps.set_branch_name.outputs.branch_name }}
 
-      # Step 8: Debug the remote branch state
-      - name: Verify Remote Branch After Push
+      # Step 8: Verify branch state
+      - name: Verify branch state
         run: |
-          echo "Verifying the remote branch state..."
-          git ls-remote origin | grep ${{ steps.set_branch_name.outputs.branch_name }}
+          echo "Verifying branch state on remote..."
+          git fetch origin
           git log origin/${{ steps.set_branch_name.outputs.branch_name }} --oneline
 
-      # Step 9: Create Pull Request
+      # Step 9: Create a pull request
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
