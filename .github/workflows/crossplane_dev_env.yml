@@ -69,24 +69,16 @@ jobs:
       - name: Create or Update DevEnvironment File
         id: create_dev_env_file
         run: |
-          FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
-          TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
-          RG_NAME="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
-          SSTORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
-          
-          mkdir -p infrastructure/azure/dev-envs
-
-          export GITHUB_ACTOR=${{ github.actor }}
-          export GITHUB_EVENT_ISSUE_NUMBER=${{ github.event.issue.number }}
-          export REGION=${{ inputs.region }}
-          export RESOURCE_GROUP=$RG_NAME
-          export STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
-          envsubst < $TEMPLATE_PATH > $FILE_PATH
-
-          echo "Final contents of $FILE_PATH:"
-          cat "$FILE_PATH"
-
+          chmod +x infrastructure/scripts/create_dev_env_file.sh
+          export FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
+          export TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
+          export REGION="${{ inputs.region }}"
+          export RESOURCE_GROUP="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
+          export STORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
+          infrastructure/scripts/create_dev_env_file.sh
+    
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
+     
 
       - name: Stage, Commit, and Push Changes
         run: |
@@ -100,7 +92,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.set_branch_name.outputs.branch_name }}
           base: "main"
-          title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+          title: "Dev environment fortr ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
             This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}.
             Once merged, ArgoCD will deploy or update the environment.
