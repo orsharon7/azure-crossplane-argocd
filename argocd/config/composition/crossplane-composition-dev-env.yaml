@@ -90,5 +90,5 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
 
         # (C) Patch resourceGroup param -> metadata.name with transforms
-        - fromFieldPath: "spec.parameters.storeageAccountName"
+        - fromFieldPath: "spec.parameters.storageAccountName"
           toFieldPath: "metadata.name"

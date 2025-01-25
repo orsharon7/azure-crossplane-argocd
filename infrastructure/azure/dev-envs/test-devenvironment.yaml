@@ -8,4 +8,4 @@ spec:
     resourceGroup: test-resource-group
     developer: test-developer
     issueId: "123"
-    storeageAccountName: stestdevelopersa123
+    storageAccountName: stestdevelopersa123
