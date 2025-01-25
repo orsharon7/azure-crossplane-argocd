@@ -43,6 +43,9 @@ jobs:
       pull-requests: write
       issues: write
 
+    outputs:
+      branch_name: ${{ steps.set_branch_name.outputs.branch_name }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -58,7 +61,7 @@ jobs:
 
       - name: Set branch name
         id: set_branch_name
-        run: echo "BRANCH_NAME=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_ENV
+        run: echo "branch_name=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
 
       - name: Create or Update DevEnvironment File
         run: |
@@ -77,12 +80,15 @@ jobs:
           export STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
           envsubst < $TEMPLATE_PATH > $FILE_PATH
 
+          # Inject a forced-diff line (timestamp or run_id comment)
+          echo "# Force update: ${{ github.run_id }} at $(date +%s)" >> "$FILE_PATH"
+
           # Print final file for debugging
           echo "Final contents:"
           cat "$FILE_PATH"
 
       - name: Create new branch
-        run: git checkout -b "$BRANCH_NAME"
+        run: git checkout -b "${{ steps.set_branch_name.outputs.branch_name }}"
 
       - name: Commit changes
         run: |
@@ -91,13 +97,13 @@ jobs:
           git commit -m "Dev environment for ${{ github.actor }} issue #${{ github.event.issue.number }} - forced update"
 
       - name: Push changes
-        run: git push --set-upstream origin "$BRANCH_NAME"
+        run: git push --set-upstream origin "${{ steps.set_branch_name.outputs.branch_name }}"
 
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: "$BRANCH_NAME"
+          branch: ${{ steps.set_branch_name.outputs.branch_name }}
           base: "main"
           title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
