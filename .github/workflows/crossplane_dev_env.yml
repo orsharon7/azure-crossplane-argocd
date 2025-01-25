@@ -56,43 +56,26 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-      - id: create_or_update_file
-        name: Create or Update DevEnvironment File
+      - name: Create or Update DevEnvironment File
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
+          TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-temaplate.yaml"
           RG_NAME="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
+          STORAGE_ACCOUNT_NAME="$(echo dev${{ inputs.unique_id }}$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16) | head -c 24)"
           
-          # We'll inject a forced-diff line (timestamp or run_id comment).
-          FORCE_DIFF="# Force update: ${{ github.run_id }} at $(date +%s)"
-
           mkdir -p infrastructure/azure/dev-envs
 
-          if [ -f "$FILE_PATH" ]; then
-            echo "File already exists, we will update it with a forced-diff line."
-            # Append or modify a comment line so there's guaranteed to be a new diff
-            # We can do it simply by adding a comment line at the end:
-            echo "$FORCE_DIFF" >> "$FILE_PATH"
-          else
-            echo "File does not exist, creating a new one."
-            cat <<EOF > "$FILE_PATH"
-              apiVersion: dev.azure.upbound.io/v1alpha1
-              kind: DevEnvironment
-              metadata:
-                name: dev-env-${{ github.actor }}-${{ github.event.issue.number }}
-                labels:
-                  developer: "${{ github.actor }}"
-                  issue-id: "${{ github.event.issue.number }}"
-              spec:
-                parameters:
-                  region: eastus
-                  resourceGroup: "$RG_NAME"
-                  developer: "${{ github.actor }}"
-                  issueId: "${{ github.event.issue.number }}"
-                  # Keep under 24 chars for Azure
-                  storageAccountName: "$(echo dev${{ inputs.unique_id }}$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16) | head -c 24)"
-              $FORCE_DIFF
-              EOF
-          fi
+          # Copy the template file and replace placeholders
+          envsubst < $TEMPLATE_PATH > $FILE_PATH <<EOF
+          GITHUB_ACTOR=${{ github.actor }}
+          GITHUB_EVENT_ISSUE_NUMBER=${{ github.event.issue.number }}
+          REGION=${{ inputs.region }}
+          RESOURCE_GROUP=$RG_NAME
+          STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
+          EOF
+
+          # Inject a forced-diff line (timestamp or run_id comment)
+          echo "# Force update: ${{ github.run_id }} at $(date +%s)" >> "$FILE_PATH"
 
           # Print final file for debugging
           echo "Final contents:"

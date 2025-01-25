@@ -1,0 +1,11 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: dev-env-${GITHUB_ACTOR}-${GITHUB_EVENT_ISSUE_NUMBER}
+spec:
+  parameters:
+    region: ${REGION}
+    resourceGroup: ${RESOURCE_GROUP}
+    developer: ${GITHUB_ACTOR}
+    issueId: "${GITHUB_EVENT_ISSUE_NUMBER}"
+    storageAccountName: ${STORAGE_ACCOUNT_NAME}
