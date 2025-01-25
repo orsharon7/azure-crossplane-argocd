@@ -90,7 +90,7 @@ jobs:
 
       - name: Push changes
         run: |
-          BRANCH_NAME="dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
           git push --set-upstream origin "$BRANCH_NAME"
 
       - name: Create or Update Pull Request
