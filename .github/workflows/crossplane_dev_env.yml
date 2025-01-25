@@ -56,6 +56,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
+      - name: Set branch name
+        id: set_branch_name
+        run: echo "BRANCH_NAME=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_ENV
+
       - name: Create or Update DevEnvironment File
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
@@ -78,9 +82,7 @@ jobs:
           cat "$FILE_PATH"
 
       - name: Create new branch
-        run: |
-          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
-          git checkout -b "$BRANCH_NAME"
+        run: git checkout -b "$BRANCH_NAME"
 
       - name: Commit changes
         run: |
@@ -89,15 +91,13 @@ jobs:
           git commit -m "Dev environment for ${{ github.actor }} issue #${{ github.event.issue.number }} - forced update"
 
       - name: Push changes
-        run: |
-          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
-          git push --set-upstream origin "$BRANCH_NAME"
+        run: git push --set-upstream origin "$BRANCH_NAME"
 
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: "create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          branch: "$BRANCH_NAME"
           base: "main"
           title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
