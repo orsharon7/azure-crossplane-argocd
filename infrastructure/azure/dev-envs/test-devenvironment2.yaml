@@ -1,0 +1,11 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: stark-tower-env-eastus-456
+spec:
+  parameters:
+    region: eastus
+    resourceGroup: avengers-resource-group
+    developer: tony-stark
+    issueId: "456"
+    storageAccountName: starkindustries456re
