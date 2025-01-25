@@ -3,7 +3,7 @@ run-name: Destroy Environment on Issue ${{ github.event.issue.number }} for ${{ 
 
 on:
   issues:
-    types: [closed]
+    #types: [closed]
 
 jobs:
   destroy:
