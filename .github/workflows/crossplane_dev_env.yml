@@ -90,7 +90,7 @@ jobs:
           cat $FILE_PATH
 
       # Step 6: Debug before committing
-      - name: Debug: Verify Git Status Before Commit
+      - name: Debug Verify Git Status Before Commit
         run: |
           echo "Checking Git status before commit..."
           git status
