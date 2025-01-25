@@ -42,73 +42,71 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    outputs:
-      branch_name: ${{ steps.set_branch_name.outputs.branch_name }}
 
     steps:
+      # 1) Check out the repository
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repository }}
           ref: main
-          fetch-depth: 0   # Avoid shallow clones that can cause "no-diff" confusion
+          fetch-depth: 0
 
+      # 2) Configure Git
       - name: Set up Git
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
+      # 3) Create a branch name dynamically
       - name: Set branch name
         id: set_branch_name
         run: echo "branch_name=create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
 
+      # 4) Generate the DevEnvironment file
       - name: Create or Update DevEnvironment File
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
           TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-temaplate.yaml"
           RG_NAME="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
+
+          # Generate a random 16-char suffix for a 24-char max name
           STORAGE_ACCOUNT_NAME="$(echo dev${{ inputs.unique_id }}$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16) | head -c 24)"
-          
+
           mkdir -p infrastructure/azure/dev-envs
 
-          # Export environment variables for envsubst
+          # Export variables so envsubst can replace placeholders in the template
           export GITHUB_ACTOR=${{ github.actor }}
           export GITHUB_EVENT_ISSUE_NUMBER=${{ github.event.issue.number }}
           export REGION=${{ inputs.region }}
           export RESOURCE_GROUP=$RG_NAME
           export STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
-          envsubst < $TEMPLATE_PATH > $FILE_PATH
 
-          # Print final file for debugging
-          echo "Final contents:"
+          # Generate the final file
+          envsubst < "$TEMPLATE_PATH" > "$FILE_PATH"
+
+          echo "Final contents of $FILE_PATH:"
           cat "$FILE_PATH"
 
-      - name: Create new branch
-        run: git checkout -b ${{ steps.set_branch_name.outputs.branch_name }}
+      # 5) Use Add & Commit Action to handle commit and push
+      - name: Add and Commit Changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: "github-actions[bot]"
+          author_email: "github-actions[bot]@users.noreply.github.com"
+          message: "Add DevEnvironment file for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+          branch: ${{ steps.set_branch_name.outputs.branch_name }}
+          push: true
 
-      - name: Commit changes
-        run: |
-          FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
-          git add "$FILE_PATH"
-          git commit -m "Dev environment for ${{ github.actor }} issue #${{ github.event.issue.number }} - forced update"
-
-      - name: Push changes
-        run: git push --set-upstream origin ${{ steps.set_branch_name.outputs.branch_name }}
-
+      # 6) Create or Update Pull Request
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.set_branch_name.outputs.branch_name }}
-          base: "main"
+          base: main
           title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
-            A new or updated DevEnvironment file for #${{ github.event.issue.number }} has been committed.
-            Merging this PR will have ArgoCD pick it up and deploy (or update) the environment.
+            This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}.
+            Once merged, ArgoCD will deploy or update the environment.
           draft: false
-          # Turn off rebase so the commit doesn't vanish
-          update-branch: false
-          rebase-strategy: none
-
-          # Use a merge commit for final merging (optional)
-          merge-method: merge
