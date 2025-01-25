@@ -29,13 +29,17 @@ spec:
               developer: ""
               issue-id: ""
       patches:
-        - fromFieldPath: "spec.parameters.region"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.region"
           toFieldPath: "spec.forProvider.location"
-        - fromFieldPath: "spec.parameters.developer"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.developer"
           toFieldPath: "spec.forProvider.tags[developer]"
-        - fromFieldPath: "spec.parameters.issueId"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
           toFieldPath: "spec.forProvider.tags[issue-id]"
-        - fromFieldPath: "spec.parameters.resourceGroup"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "metadata.name"
 
     # ------------------------------------------------------------------------------
@@ -47,6 +51,7 @@ spec:
         kind: VirtualNetwork
         metadata:
           # Let Crossplane handle name generation or patch if desired
+          name: ""
         spec:
           forProvider:
             addressSpace:
@@ -54,12 +59,11 @@ spec:
             location: ""
             resourceGroupName: ""
       patches:
-        - fromFieldPath: "spec.parameters.region"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.region"
           toFieldPath: "spec.forProvider.location"
-        # Force VNet to wait for RG by referencing actual resource-group name
-        - type: FromResourceFieldPath
-          fromResource: resource-group
-          fromFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "spec.forProvider.resourceGroupName"
 
     # ------------------------------------------------------------------------------
@@ -70,6 +74,7 @@ spec:
         apiVersion: storage.azure.upbound.io/v1beta1
         kind: Account
         metadata:
+          # We'll patch in the name from spec.parameters.storageAccountName
           name: ""
         spec:
           forProvider:
@@ -79,16 +84,12 @@ spec:
             accountTier: Standard
             accountReplicationType: LRS
       patches:
-        # (A) Patch region -> forProvider.location
-        - fromFieldPath: "spec.parameters.region"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.region"
           toFieldPath: "spec.forProvider.location"
-
-        # (B) Wait for Resource Group creation by referencing RG name
-        - type: FromResourceFieldPath
-          fromResource: resource-group
-          fromFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "spec.forProvider.resourceGroupName"
-
-        # (C) Patch resourceGroup param -> metadata.name with transforms
-        - fromFieldPath: "spec.parameters.storageAccountName"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.storageAccountName"
           toFieldPath: "metadata.name"
