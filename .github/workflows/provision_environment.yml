@@ -136,8 +136,6 @@ jobs:
       repository: ${{ needs.provision.outputs.repository }}
       issue_number: ${{ needs.provision.outputs.issue_number }}
       run_id: ${{ needs.provision.outputs.run_id }}
-      crossplane_aks_cluster: "orrocrspln-aks"
-      crossplane_aks_cluster_rg: "env-orrocrspln-31-1737614754-rg"
     secrets:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
