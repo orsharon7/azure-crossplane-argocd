@@ -121,7 +121,7 @@ jobs:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
   deploy_dev_env:
-    uses: orsharon7/sample-app//.github/workflows/crossplane_dev_env.yml@main
+    uses: orsharon7/sample-app/.github/workflows/crossplane_dev_env.yml@main
     needs: provision
     permissions:
       issues: write
