@@ -96,7 +96,7 @@ jobs:
       unique_id: ${{ needs.provision.outputs.unique_id }}
       resource_group_name: ${{ needs.provision.outputs.resource_group_name }}
       repository: ${{ needs.provision.outputs.repository }}
-      issue_number: ${{ needs.provision.outputs.issue_number }}
+      issue_number: "${{ needs.provision.outputs.issue_number }}"
       run_id: ${{ needs.provision.outputs.run_id }}
     secrets:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
@@ -115,7 +115,7 @@ jobs:
       unique_id: ${{ needs.provision.outputs.unique_id }}
       resource_group_name: ${{ needs.provision.outputs.resource_group_name }}
       repository: ${{ needs.provision.outputs.repository }}
-      issue_number: ${{ needs.provision.outputs.issue_number }}
+      issue_number: "${{ needs.provision.outputs.issue_number }}"
       run_id: ${{ needs.provision.outputs.run_id }}
     secrets:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
@@ -134,7 +134,7 @@ jobs:
       environment_type: ${{ needs.provision.outputs.environment_type }}
       unique_id: ${{ needs.provision.outputs.unique_id }}
       repository: ${{ needs.provision.outputs.repository }}
-      issue_number: ${{ needs.provision.outputs.issue_number }}
+      issue_number: "${{ needs.provision.outputs.issue_number }}"
       run_id: ${{ needs.provision.outputs.run_id }}
     secrets:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
