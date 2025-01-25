@@ -1,0 +1,35 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: devenvironments.dev.azure.upbound.io
+spec:
+  group: dev.azure.upbound.io
+  names:
+    kind: DevEnvironment
+    plural: devenvironments
+    singular: devenvironment
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    region:
+                      type: string
+                    resourceGroup:
+                      type: string
+                    developer:
+                      type: string
+                    issueId:
+                      type: string
+  defaultCompositionRef:
+    name: azure-dev-environment

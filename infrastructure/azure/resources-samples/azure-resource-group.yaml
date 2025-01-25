@@ -1,0 +1,9 @@
+apiVersion: azure.upbound.io/v1beta1
+kind: ResourceGroup
+metadata:
+  name: rg-${DEVELOPER}
+spec:
+  forProvider:
+    location: ${REGION}
+    tags:
+      provisioner: crossplane

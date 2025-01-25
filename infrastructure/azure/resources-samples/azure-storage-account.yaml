@@ -1,0 +1,14 @@
+apiVersion: storage.azure.upbound.io/v1beta1
+kind: Account
+metadata:
+  name: storageacct-${DEVELOPER}
+  labels:
+    app: dev-environment
+    developer: ${DEVELOPER}
+spec:
+  forProvider:
+    location: ${REGION}
+    resourceGroupName: ${RESOURCE_GROUP}
+    accountKind: StorageV2
+    accountTier: Standard
+    accountReplicationType: LRS

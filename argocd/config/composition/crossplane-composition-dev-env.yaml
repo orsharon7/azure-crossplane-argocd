@@ -1,0 +1,59 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: azure-dev-environment
+spec:
+  compositeTypeRef:
+    apiVersion: dev.azure.upbound.io/v1alpha1
+    kind: DevEnvironment
+  resources:
+    # Resource Group
+    - name: resource-group
+      base:
+        apiVersion: azure.upbound.io/v1beta1
+        kind: ResourceGroup
+        metadata:
+          name: example-resourcegroup-{{ .parameters.resourceGroup }}
+        spec:
+          forProvider:
+            location: {{ .parameters.region }}
+            tags:
+              provisioner: crossplane
+              developer: {{ .parameters.developer }}
+              issue-id: {{ .parameters.issueId }}
+      connectionDetails:
+        - name: name
+          fromConnectionSecretKey: name
+
+    # Virtual Network
+    - name: virtual-network
+      base:
+        apiVersion: network.azure.upbound.io/v1beta1
+        kind: VirtualNetwork
+        metadata:
+          name: virtual-network-{{ .parameters.resourceGroup }}
+        spec:
+          forProvider:
+            addressSpace:
+              - 10.1.0.0/16
+            location: {{ .parameters.region }}
+            resourceGroupName: "{{ .resources.resource-group.spec.forProvider.name }}" # Reference RG
+      dependsOn:
+        - resource-group
+
+    # Storage Account
+    - name: storage-account
+      base:
+        apiVersion: storage.azure.upbound.io/v1beta1
+        kind: Account
+        metadata:
+          name: storageacct{{ .parameters.resourceGroup | lower | replaceAll "-" "" }}
+        spec:
+          forProvider:
+            location: {{ .parameters.region }}
+            resourceGroupName: "{{ .resources.resource-group.spec.forProvider.name }}" # Reference RG
+            accountKind: StorageV2
+            accountTier: Standard
+            accountReplicationType: LRS
+      dependsOn:
+        - resource-group

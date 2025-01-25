@@ -1,0 +1,13 @@
+apiVersion: network.azure.upbound.io/v1beta1
+kind: VirtualNetwork
+metadata:
+  name: virtual-network-${DEVELOPER}
+  labels:
+    app: dev-environment
+    developer: ${DEVELOPER}
+spec:
+  forProvider:
+    addressSpace:
+      - 10.1.0.0/16
+    location: ${REGION}
+    resourceGroupName: ${RESOURCE_GROUP}

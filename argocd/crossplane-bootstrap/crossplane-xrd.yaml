@@ -10,13 +10,13 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:  # Spec field is required
+    argocd.argoproj.io/sync-wave: "5"
+spec:
   project: default
   source:
     repoURL: https://github.com/orsharon7/sample-app
     targetRevision: HEAD
-    path: argocd/config/xrd  # Ensure this path points to the correct folder
+    path: argocd/config/xrd
   destination:
     namespace: default
     server: https://kubernetes.default.svc
