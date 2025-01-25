@@ -80,9 +80,6 @@ jobs:
           export STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
           envsubst < $TEMPLATE_PATH > $FILE_PATH
 
-          # Inject a forced-diff line (timestamp or run_id comment)
-          echo "# Force update: ${{ github.run_id }} at $(date +%s)" >> "$FILE_PATH"
-
           # Print final file for debugging
           echo "Final contents:"
           cat "$FILE_PATH"
@@ -103,7 +100,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.set_branch_name.outputs.branch_name }}
+          branch: ${{ steps.set_branch_name.outputs.branch_nam }}
           base: "main"
           title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           body: |
