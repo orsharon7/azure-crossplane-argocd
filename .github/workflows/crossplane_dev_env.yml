@@ -102,16 +102,16 @@ jobs:
       # Step 9: Authenticate GitHub CLI
       - name: Authenticate GitHub CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "${GITHUB_TOKEN}" | gh auth login --with-token
+          gh auth login --with-token
 
       # Step 10: Create a pull request using GitHub CLI
       - name: Create Pull Request
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          PR_TITLE="Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+          PR_TITLE="Dev environment for @${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           PR_BODY="This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}.
           
           Once merged, ArgoCD will deploy or update the environment."
