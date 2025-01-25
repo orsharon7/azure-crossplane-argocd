@@ -1,0 +1,63 @@
+name: Destroy Environment on Issue Close
+run-name: Destroy Environment on Issue ${{ github.event.issue.number }} for ${{ github.actor }}
+
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  destroy:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check if issue is an environment request
+        if: contains(github.event.issue.labels.*.name, 'environment-request')
+        run: echo "Environment request detected for closure"
+        
+      - name: Comment on Issue with Cleanup Start
+        run: |
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"body": "🌶️ @${{ github.actor }} Environment submitted for deletion."}' \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+
+
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Parse Issue Details
+        id: parse_issue
+        run: |
+          # Extract app_name from the issue body using awk
+          body="${{ github.event.issue.body }}"
+          app_name=$(echo "$body" | awk '/>>app_name<</{getline; getline; print}')
+          if [[ -z "$app_name" ]]; then
+            echo "Error: Failed to parse app_name." >&2
+            exit 1
+          fi
+          echo "app_name=$app_name" >> $GITHUB_ENV
+
+      - name: Find and Delete Resource Group
+        run: |
+          # Find the resource group by searching for the Issue ID tag
+          issue_url="https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}"
+          resource_group_name=$(az group list --tag "Issue ID=$issue_url" --query "[0].name" -o tsv)
+          
+          if [[ -z "$resource_group_name" ]]; then
+            echo "Error: No resource group found with the specified Issue ID tag." >&2
+            exit 1
+          fi
+
+          # Delete the resource group
+          az group delete --name "$resource_group_name" --yes --no-wait
+
+          echo "resource_group_name=$resource_group_name" >> $GITHUB_ENV
+
+      - name: Comment on Issue with Cleanup Confirmation
+        run: |
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"body": "🗑️ Environment name `${{ env.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted.  "}' \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"

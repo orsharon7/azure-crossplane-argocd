@@ -1,0 +1,178 @@
+name: AKS Environment Provisioning
+run-name: Deploy AKS Environment for ${{ github.actor }}
+on:
+  workflow_call:
+    secrets:
+      azure_credentials:
+        required: true
+    inputs:
+      app_name:
+        required: true
+        type: string
+      region:
+        required: true
+        type: string
+      environment_type:
+        required: true
+        type: string
+      unique_id:
+        required: true
+        type: string
+      resource_group_name:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      issue_number:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+
+jobs:
+  deploy-aks:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      contents: read
+    outputs:
+      aks_cluster_name: ${{ steps.parse_inputs.outputs.aks_cluster_name }}
+      acr_name: ${{ steps.parse_inputs.outputs.acr_name }}
+      resource_group_name: ${{ steps.parse_inputs.outputs.resource_group_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Parse input parameters
+        id: parse_inputs
+        run: |
+          echo "app_name=${{ inputs.app_name }}" >> $GITHUB_ENV
+          echo "region=${{ inputs.region }}" >> $GITHUB_ENV
+          echo "environment_type=${{ inputs.environment_type }}" >> $GITHUB_ENV
+          echo "unique_id=${{ inputs.unique_id }}" >> $GITHUB_ENV
+          echo "resource_group_name=${{ inputs.resource_group_name }}" >> $GITHUB_ENV
+          echo "repository=${{ inputs.repository }}" >> $GITHUB_ENV
+          echo "issue_number=${{ inputs.issue_number }}" >> $GITHUB_ENV
+          echo "aks_cluster_name=${{ inputs.app_name }}-aks" >> $GITHUB_ENV
+          echo "acr_name=${{ inputs.app_name }}acr" >> $GITHUB_ENV
+          {
+            echo "app_name=$app_name"
+            echo "region=$region"
+            echo "environment_type=$environment_type"
+            echo "unique_id=$unique_id"
+            echo "resource_group_name=$resource_group_name"
+            echo "repository=${{ github.repository }}"
+            echo "issue_number=${{ github.event.issue.number }}"
+            echo "run_id=${{ github.run_id }}"
+            echo "aks_cluster_name=${app_name}-aks"
+            echo "acr_name=${app_name}acr"
+          } >> $GITHUB_OUTPUT
+
+      - name: Comment on Issue to Indicate Kickoff
+        run: |
+          run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          comment="🚀 AKS Environment provisioning has started...\\n\\nResource group name: \`${{ env.resource_group_name }}\`\\ncc: @${{ github.actor }}"
+          comment_escaped=$(echo "$comment" | sed 's/"/\\"/g')
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment_escaped\"}" \
+            "https://api.github.com/repos/${{ env.repository }}/issues/${{ env.issue_number }}/comments"
+
+      - name: Create Azure Container Registry
+        run: |
+          az acr create --resource-group "${{ env.resource_group_name }}" --name "${{ env.acr_name}}" --sku Basic
+
+      - name: Create AKS Cluster
+        run: |
+          az aks create \
+            --resource-group "${{ env.resource_group_name }}" \
+            --name "${{ env.aks_cluster_name }}" \
+            --node-count 1 \
+            --enable-addons monitoring \
+            --generate-ssh-keys \
+            --location "${{ env.region }}"
+      
+      - name: Get AKS Credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "${{ env.resource_group_name }}" \
+            --name "${{ env.aks_cluster_name }}"
+
+      - name: Build and Push Docker Image
+        run: |
+          az acr login --name "${{ env.acr_name }}"
+          docker build -t "${{ env.acr_name }}.azurecr.io/sample-app:v1" ./sample-app
+          docker push "${{ env.acr_name }}.azurecr.io/sample-app:v1"
+
+
+      # - name: Deploy Public Sample Application
+      #   run: |
+      #     kubectl apply -f ./sample-app/deploy.yaml
+      
+      - name: Get Public Application URL
+        id: get_app_url
+        run: |
+          app_url=$(kubectl get svc public-sample-app-service --output jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -n "$app_url" ]; then
+            echo "app_url=$app_url" >> $GITHUB_ENV
+            echo "webAppUrl=http://$app_url" >> $GITHUB_ENV
+          else
+            echo "webAppUrl=Not Available" >> $GITHUB_ENV
+
+      - name: Comment on Issue to Indicate Completion
+        run: |
+          if [ "${{ env.webAppUrl }}" != "Not Available" ]; then
+            comment="✅ AKS Environment provisioning completed...\\n\\nResource group name: \`${{ env.resource_group_name }}\`\\nWeb App URL: [${{ env.webAppUrl }}](${{ env.webAppUrl }})\\n\\ncc: @${{ github.actor }}"
+          else
+            comment="✅ AKS Environment provisioning completed...\\n\\nResource group name: \`${{ env.resource_group_name }}\`\\nWeb App URL: Not Available\\n\\ncc: @${{ github.actor }}"
+          fi
+          comment_escaped=$(echo "$comment" | sed 's/"/\\"/g')
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment_escaped\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ inputs.issue_number }}/comments"
+  
+  configure-argocd:
+    runs-on: self-hosted
+    needs: deploy-aks
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "${{ needs.deploy-aks.outputs.resource_group_name }}" \
+            --name "${{ needs.deploy-aks.outputs.aks_cluster_name }}"       
+
+      - name: Install ArgoCD
+        run: |
+          kubectl create namespace argocd
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl config set-context --current --namespace=argocd
+          argocd login --core --insecure
+          kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+          argocd app create sample-app --repo https://github.com/orsharon7/sample-app.git --path . --dest-server https://kubernetes.default.svc --dest-namespace default --sync-policy automated
+          argocd app sync sample-app
+         
+      - name: Get external IP of sample-app
+        id: get-external-ip
+        run: |
+          EXTERNAL_IP=$(kubectl -n default get svc public-sample-app-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "::set-output name=external_ip::$EXTERNAL_IP"
+
+      - name: Print external IP
+        run: echo "The external IP is ${{ steps.get-external-ip.outputs.external_ip }}"

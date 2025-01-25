@@ -1,0 +1,47 @@
+---
+name: "Request Development Environment"
+description: "Request a temporary environment for development or testing"
+title: "Environment Request - Dev"
+labels: 
+  - environment-request
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Request a Development Environment
+
+  - type: input
+    id: app_name
+    attributes:
+      label: ">>app_name<<"
+      description: "Provide the name of the application for this environment."
+      placeholder: "e.g., my-app"
+
+  - type: dropdown
+    id: region
+    attributes:
+      label: ">>region<<"
+      description: "Choose the Azure region for this environment."
+      options:
+        - eastus
+        - westeurope
+        - southeastasia
+        - centralus
+
+  - type: dropdown
+    id: environment_type
+    attributes:
+      label: ">>environment_type<<"
+      description: "Choose the environemnt type for this development."
+      options:
+        - dev_env
+        - aks
+        - webapp
+
+  - type: textarea
+    id: additional_notes
+    attributes:
+      label: ">>additional_notes<<"
+      description: "Add any specific requirements or notes (optional)."
+      placeholder: "Enter additional information here."

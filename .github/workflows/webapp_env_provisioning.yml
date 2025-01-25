@@ -1,0 +1,84 @@
+name: Deploy WebApp Environment
+run-name: Deploy WebApp Environment for ${{ github.actor }}
+on: 
+  workflow_call:
+    secrets:
+      azure_credentials:
+        required: true
+    inputs:
+      app_name:
+        required: true
+        type: string
+      region:
+        required: true
+        type: string
+      environment_type:
+        required: true
+        type: string
+      unique_id:
+        required: true
+        type: string
+      resource_group_name:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      issue_number:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+
+jobs:
+  deploy-webapp:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Parse Inputs
+        id: parse_inputs
+        run: |
+          echo "app_name=${{ inputs.app_name }}" >> $GITHUB_ENV
+          echo "region=${{ inputs.region }}" >> $GITHUB_ENV
+          echo "environment_type=${{ inputs.environment_type }}" >> $GITHUB_ENV
+          echo "unique_id=${{ inputs.unique_id }}" >> $GITHUB_ENV
+          echo "resource_group_name=${{ inputs.resource_group_name }}" >> $GITHUB_ENV
+          echo "repository=${{ inputs.repository }}" >> $GITHUB_ENV
+          echo "issue_number=${{ inputs.issue_number }}" >> $GITHUB_ENV
+          echo "run_id=${{ inputs.run_id }}" >> $GITHUB_ENV
+      
+      - name: Comment on Issue
+        id: comment_issue
+        run: |
+          comment="👨‍💻 Working on WebApp provisioning for the following environment:\\n\\n- App Name: \`${{ env.app_name }}\`\\n- Region: \`${{ env.region }}\`\\n- Environment Type: \`${{ env.environment_type }}\`\\n- Unique ID: \`${{ env.unique_id }}\`\\n- Resource Group: \`${{ env.resource_group_name }}\`"
+          comment_escaped=$(echo "$comment" | sed 's/"/\\"/g')
+          curl -s -X POST -H s"Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment_escaped\"}" \
+            "https://api.github.com/repos/${{ env.repository }}/issues/${{ env.issue_number }}/comments"
+                   
+      - name: Deploy ARM Template
+        id: deploy_template
+        run: |
+          output=$(az deployment group create --resource-group "${{ env.resource_group_name }}" \
+            --template-file infra/webapp-template.json \
+            --parameters location=${{ env.region }} \
+                        appServicePlanName="appService-${{ env.unique_id }}" \
+                        webAppName="${{ env.app_name }}-${{ env.unique_id }}" \
+            --query "properties.outputs.webAppUrl.value" -o tsv)
+          echo "webAppUrl=$output" >> $GITHUB_ENV
+
+      - name: Output WebApp URL
+        run: |
+          echo "WebApp URL: ${{ env.webAppUrl }}"

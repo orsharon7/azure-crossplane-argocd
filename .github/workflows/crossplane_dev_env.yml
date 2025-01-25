@@ -1,0 +1,110 @@
+name: Provision Environment on Issue Open via Argocd Crossplane
+run-name: Provision Environment on Issue ${{ github.event.issue.number }} for ${{ github.actor }} via Argocd
+
+on:
+  workflow_call:
+    secrets:
+      azure_credentials:
+        required: true
+    inputs:
+      app_name:
+        required: true
+        type: string
+      region:
+        required: true
+        type: string
+      environment_type:
+        required: true
+        type: string
+      unique_id:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      issue_number:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+      crossplane_aks_cluster:
+        required: false
+        type: string
+      crossplane_aks_cluster_rg:
+        required: false
+        type: string
+
+jobs:
+  provision:
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      crossplane_rg_name: ${{ steps.generate_dev_env.outputs.crossplane_rg_name }}
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository }}
+          ref: main
+          
+      - id: generate_dev_env
+        name: Generate DevEnvironment Resource
+        run: |
+          RG_NAME="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
+          mkdir -p infrastructure/azure/dev-envs
+
+          cat <<EOF > infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml
+          apiVersion: dev.azure.upbound.io/v1alpha1
+          kind: DevEnvironment
+          metadata:
+            name: dev-env-${{ github.actor }}-${{ github.event.issue.number }}
+            labels:
+              developer: "${{ github.actor }}"
+              issue-id: "${{ github.event.issue.number }}"
+          spec:
+            parameters:
+              region: eastus
+              resourceGroup: "$RG_NAME"
+              developer: "${{ github.actor }}"
+              issueId: "${{ github.event.issue.number }}"
+              sotrageAccountName: "$(echo dev${{ inputs.unique_id }}$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16) | head -c 24)"
+          EOF
+
+          echo "crossplane_rg_name=$RG_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Create new branch
+        run: |
+          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          git checkout -b "$BRANCH_NAME"
+
+      - name: Commit changes
+        run: |
+          git add infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml
+          git commit -m "Developer ${{ github.actor }} requested a dev environment for issue #${{ github.event.issue.number }}. Approval will trigger ArgoCD provisioning."
+
+      - name: Push changes
+        run: |
+          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          git push --set-upstream origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          base: "main"
+          title: "Dev environment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+          body: |
+            Developer ${{ github.actor }} requested a new dev environment (Issue #${{ github.event.issue.number }}).
+            Once approved, ArgoCD will deploy the necessary resources automatically.
+          draft: false

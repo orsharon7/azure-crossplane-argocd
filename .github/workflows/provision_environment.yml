@@ -1,0 +1,175 @@
+name: Provision Environment on Issue Open
+run-name: Provision Environment on Issue ${{ github.event.issue.number }} for ${{ github.actor }}
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  provision:
+    # Only run this job if the issue has label "environment-request"
+    if: contains(github.event.issue.labels.*.name, 'environment-request')
+    runs-on: self-hosted
+    outputs:
+      app_name: ${{ steps.parse_issue.outputs.app_name }}
+      region: ${{ steps.parse_issue.outputs.region }}
+      environment_type: ${{ steps.parse_issue.outputs.environment_type }}
+      unique_id: ${{ steps.parse_issue.outputs.unique_id }}
+      resource_group_name: ${{ steps.parse_issue.outputs.resource_group_name }}
+      additional_notes: ${{ steps.parse_issue.outputs.additional_notes }}
+      repository: ${{ steps.parse_issue.outputs.repository }}
+      issue_number: ${{ steps.parse_issue.outputs.issue_number }}
+      run_id: ${{ steps.parse_issue.outputs.run_id }}
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Comment on Issue to Indicate Provisioning
+        run: |
+          run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          comment="⚙️ Demo Environment request processing started... \
+          Actions workflow logs can be accessed [here]($run_url)."
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Parse Issue Details
+        id: parse_issue
+        run: |
+          body="${{ github.event.issue.body }}"
+          app_name=$(echo "$body" | awk '/>>app_name<</{getline; getline; print}')
+          region=$(echo "$body" | awk '/>>region<</{getline; getline; print}')
+          environment_type=$(echo "$body" | awk '/>>environment_type<</{getline; getline; print}')
+          additional_notes=$(echo "$body" | awk '/>>additional_notes<</{getline; getline; print}')
+
+          if [[ -z "$app_name" || -z "$region" || -z "$environment_type" ]]; then
+            echo "Error: Failed to parse issue details." >&2
+            exit 1
+          fi
+
+          unique_id="${{ github.event.issue.number }}-$(date +%s)"
+          resource_group_name="env-$app_name-$unique_id-rg"
+
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "region=$region" >> $GITHUB_OUTPUT
+          echo "environment_type=$environment_type" >> $GITHUB_OUTPUT
+          echo "unique_id=$unique_id" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$resource_group_name" >> $GITHUB_OUTPUT
+          echo "additional_notes=$additional_notes" >> $GITHUB_OUTPUT
+          echo "repository=${{ github.repository }}" >> $GITHUB_OUTPUT
+          echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          echo "run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      # Only create the resource group if NOT dev_env
+      - name: Create Resource Group with Tags
+        if: ${{ steps.parse_issue.outputs.environment_type != 'dev_env' }}
+        run: |
+          az group create --name "${{ steps.parse_issue.outputs.resource_group_name }}" \
+            --location "${{ steps.parse_issue.outputs.region }}" \
+            --tags "Created by=${{ github.actor }}" \
+                   "Issue ID=https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}" \
+                   "Creation time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                   "App=${{ steps.parse_issue.outputs.app_name }}" \
+                   "Environment Type=${{ steps.parse_issue.outputs.environment_type }}" \
+                   "Environment=development"
+
+  deploy_webapp:
+    uses: orsharon_MSDEMO/MSDEMO-platform-engineering-ws/.github/workflows/webapp_env_provisioning.yml@main
+    needs: provision
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    if: needs.provision.outputs.environment_type == 'webapp'
+    with:
+      app_name: ${{ needs.provision.outputs.app_name }}
+      region: ${{ needs.provision.outputs.region }}
+      environment_type: ${{ needs.provision.outputs.environment_type }}
+      unique_id: ${{ needs.provision.outputs.unique_id }}
+      resource_group_name: ${{ needs.provision.outputs.resource_group_name }}
+      repository: ${{ needs.provision.outputs.repository }}
+      issue_number: ${{ needs.provision.outputs.issue_number }}
+      run_id: ${{ needs.provision.outputs.run_id }}
+    secrets:
+      azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
+  deploy_aks:
+    uses: orsharon_MSDEMO/MSDEMO-platform-engineering-ws/.github/workflows/aks_env_provisioning.yml@main
+    needs: provision
+    permissions:
+      issues: write
+      contents: read
+    if: needs.provision.outputs.environment_type == 'aks'
+    with:
+      app_name: ${{ needs.provision.outputs.app_name }}
+      region: ${{ needs.provision.outputs.region }}
+      environment_type: ${{ needs.provision.outputs.environment_type }}
+      unique_id: ${{ needs.provision.outputs.unique_id }}
+      resource_group_name: ${{ needs.provision.outputs.resource_group_name }}
+      repository: ${{ needs.provision.outputs.repository }}
+      issue_number: ${{ needs.provision.outputs.issue_number }}
+      run_id: ${{ needs.provision.outputs.run_id }}
+    secrets:
+      azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
+  deploy_dev_env:
+    uses: orsharon_MSDEMO/MSDEMO-platform-engineering-ws/.github/workflows/crossplane_dev_env.yml@main
+    needs: provision
+    permissions:
+      issues: write
+      contents: write
+      pull-requests: write
+    if: needs.provision.outputs.environment_type == 'dev_env'
+    with:
+      app_name: ${{ needs.provision.outputs.app_name }}
+      region: ${{ needs.provision.outputs.region }}
+      environment_type: ${{ needs.provision.outputs.environment_type }}
+      unique_id: ${{ needs.provision.outputs.unique_id }}
+      repository: ${{ needs.provision.outputs.repository }}
+      issue_number: ${{ needs.provision.outputs.issue_number }}
+      run_id: ${{ needs.provision.outputs.run_id }}
+      crossplane_aks_cluster: "orrocrspln-aks"
+      crossplane_aks_cluster_rg: "env-orrocrspln-31-1737614754-rg"
+    secrets:
+      azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
+  comment_completion:
+    needs: [provision, deploy_webapp, deploy_aks, deploy_dev_env]
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      contents: read
+    if: always()
+    steps:
+      - name: Comment on Issue to Indicate Completion or Failure
+        run: |
+          # 1) Determine which RG name to use
+          #    - If the environment type was dev_env, we get RG from crossplane_dev_env.yml outputs
+          #    - Otherwise, from the "provision" job outputs (the CLI-based creation).
+          if [ "${{ needs.provision.outputs.environment_type }}" = "dev_env" ]; then
+            RG_NAME="${{ needs.deploy_dev_env.outputs.crossplane_rg_name }}"
+          else
+            RG_NAME="${{ needs.provision.outputs.resource_group_name }}"
+          fi
+
+          # If *any* of these dependent jobs finished with "success," we consider the deployment succeeded
+          if [ "${{ needs.deploy_webapp.result }}" = "success" ] || \
+              [ "${{ needs.deploy_aks.result }}" = "success" ] || \
+              [ "${{ needs.deploy_dev_env.result }}" = "success" ]; then
+            comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
+          else
+            comment="❌ Environment provisioning failed. No deployment was executed.\\ncc: @${{ github.actor }}"
+          fi
+
+          # Post the comment back to the GitHub Issue
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"

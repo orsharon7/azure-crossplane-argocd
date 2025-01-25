@@ -1,0 +1,94 @@
+name: Provision Crossplane Dev Environment
+run-name: Provision Crossplane Environment for Issue ${{ inputs.issue_number }}
+on:
+  workflow_call:
+    secrets:
+      azure_credentials:
+        required: true
+    inputs:
+      app_name:
+        required: true
+        type: string
+      region:
+        required: true
+        type: string
+      environment_type:
+        required: true
+        type: string
+      unique_id:
+        required: true
+        type: string
+      resource_group_name:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      issue_number:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+      crossplane_aks_cluster:
+        required: false
+        type: string
+      crossplane_aks_cluster_rg:
+        required: false
+        type: string
+
+jobs:
+  provision:
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: main  # Ensure we're working on the main branch
+
+      # Step 2: Generate the developer-specific DevEnvironment YAML
+      - name: Generate DevEnvironment YAML
+        run: |
+          mkdir -p infrastructure/azure/dev-envs
+          cat <<EOF > infrastructure/azure/dev-envs/dev-env-${{ inputs.app_name }}-${{ inputs.issue_number }}.yaml
+          apiVersion: dev.azure.upbound.io/v1alpha1
+          kind: DevEnvironment
+          metadata:
+            name: dev-env-${{ inputs.app_name }}-${{ inputs.issue_number }}
+            labels:
+              developer: "${{ inputs.app_name }}"
+              issue-id: "${{ inputs.issue_number }}"
+              environment-type: "${{ inputs.environment_type }}"
+          spec:
+            parameters:
+              region: ${{ inputs.region }}
+              resourceGroup: "${{ inputs.resource_group_name }}"
+              developer: "${{ inputs.app_name }}"
+              issueId: "${{ inputs.issue_number }}"
+          EOF
+
+      # Step 3: Commit and push the YAML file to the repository
+      - name: Commit and Push DevEnvironment YAML
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add infrastructure/azure/dev-envs/dev-env-${{ inputs.app_name }}-${{ inputs.issue_number }}.yaml
+          git commit -m "Add DevEnvironment for app: ${{ inputs.app_name }}, issue: #${{ inputs.issue_number }}"
+          git push origin main
+
+      # Step 4: Comment on the GitHub issue with the status
+      - name: Comment on Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          comment="✅ A DevEnvironment YAML has been created and committed for app: \`${{ inputs.app_name }}\`. ArgoCD will pick this up shortly.\\n\\nResource Group: \`${{ inputs.resource_group_name }}\`\\nRegion: \`${{ inputs.region }}\`"
+          curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+            -d "{\"body\": \"$comment\"}" \
+            "https://api.github.com/repos/${{ inputs.repository }}/issues/${{ inputs.issue_number }}/comments"
