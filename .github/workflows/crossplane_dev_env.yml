@@ -109,7 +109,7 @@ jobs:
       # Step 10: Create a pull request using GitHub CLI
       - name: Create Pull Request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           PR_TITLE="Dev environment for @${{ github.actor }} (Issue #${{ github.event.issue.number }})"
           PR_BODY="This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}.
