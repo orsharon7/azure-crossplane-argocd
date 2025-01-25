@@ -3,54 +3,110 @@ kind: Composition
 metadata:
   name: azure-dev-environment
 spec:
+  # This Composition configures resources for the DevEnvironment XRD.
   compositeTypeRef:
     apiVersion: dev.azure.upbound.io/v1alpha1
     kind: DevEnvironment
+
   resources:
-    # Resource Group
+
+    # ------------------------------------------------------------------------------
+    # 1) Resource Group
+    # ------------------------------------------------------------------------------
     - name: resource-group
       base:
         apiVersion: azure.upbound.io/v1beta1
         kind: ResourceGroup
         metadata:
-          name: {{ .parameters.resourceGroup }}
+          # We'll patch in the name from spec.parameters.resourceGroup
+          name: ""
         spec:
+          deletionPolicy: Delete
           forProvider:
-            location: {{ .parameters.region }}
+            location: ""
             tags:
               provisioner: crossplane
-              developer: {{ .parameters.developer }}
-              issue-id: {{ .parameters.issueId }}
+              developer: ""
+              issue-id: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.location"
+        - fromFieldPath: "spec.parameters.developer"
+          toFieldPath: "spec.forProvider.tags[developer]"
+        - fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "spec.forProvider.tags[issue-id]"
+        - fromFieldPath: "spec.parameters.resourceGroup"
+          toFieldPath: "metadata.name"
 
-    # Virtual Network
+    # ------------------------------------------------------------------------------
+    # 2) Virtual Network
+    # ------------------------------------------------------------------------------
     - name: virtual-network
       base:
-        apiVersion: network.azure.upbound.io/v1beta1
+        apiVersion: network.azure.upbound.io/v1beta2
         kind: VirtualNetwork
         metadata:
-          name: virtual-network-{{ .parameters.resourceGroup }}
+          # Let Crossplane handle name generation or patch if desired
         spec:
           forProvider:
             addressSpace:
               - 10.1.0.0/16
-            location: {{ .parameters.region }}
-            resourceGroupName: {{ .resources.resource-group.metadata.name }} # Reference RG
-      dependsOn:
-        - resource-group
+            location: ""
+            resourceGroupName: ""
+      patches:
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.location"
+        # Force VNet to wait for RG by referencing actual resource-group name
+        - type: FromResourceFieldPath
+          fromResource: resource-group
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.resourceGroupName"
 
-    # Storage Account
+    # ------------------------------------------------------------------------------
+    # 3) Storage Account
+    # ------------------------------------------------------------------------------
     - name: storage-account
       base:
         apiVersion: storage.azure.upbound.io/v1beta1
         kind: Account
         metadata:
-          name: storageacct{{ .parameters.resourceGroup | lower | replaceAll "-" "" }}
+          # We'll apply naming transforms to produce a valid name
+          name: ""
         spec:
           forProvider:
-            location: {{ .parameters.region }}
-            resourceGroupName: {{ .resources.resource-group.metadata.name }} # Reference RG
+            location: ""
+            resourceGroupName: ""
             accountKind: StorageV2
             accountTier: Standard
             accountReplicationType: LRS
-      dependsOn:
-        - resource-group
+      patches:
+        # (A) Patch region -> forProvider.location
+        - fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.location"
+
+        # (B) Wait for Resource Group creation by referencing RG name
+        - type: FromResourceFieldPath
+          fromResource: resource-group
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.resourceGroupName"
+
+        # (C) Patch resourceGroup param -> metadata.name with transforms
+        - fromFieldPath: "spec.parameters.resourceGroup"
+          toFieldPath: "metadata.name"
+          transforms:
+            # 1) Convert to lowercase
+            - type: string
+              string:
+                toLower: true
+
+            # 2) Strip invalid characters (only [a-z0-9] remain)
+            - type: string
+              string:
+                regexp:
+                  match: "[^a-z0-9]"
+                  replace: ""
+
+            # 3) Prepend "storacct" (no dash!) to avoid non-alphanumeric chars
+            - type: string
+              string:
+                fmt: "storacct%s"
