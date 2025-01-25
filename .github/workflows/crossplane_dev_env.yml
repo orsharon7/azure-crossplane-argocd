@@ -65,17 +65,13 @@ jobs:
           
           mkdir -p infrastructure/azure/dev-envs
 
-          # Copy the template file and replace placeholders
-          envsubst < $TEMPLATE_PATH > $FILE_PATH <<EOF
-          GITHUB_ACTOR=${{ github.actor }}
-          GITHUB_EVENT_ISSUE_NUMBER=${{ github.event.issue.number }}
-          REGION=${{ inputs.region }}
-          RESOURCE_GROUP=$RG_NAME
-          STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
-          EOF
-
-          # Inject a forced-diff line (timestamp or run_id comment)
-          echo "# Force update: ${{ github.run_id }} at $(date +%s)" >> "$FILE_PATH"
+          # Export environment variables for envsubst
+          export GITHUB_ACTOR=${{ github.actor }}
+          export GITHUB_EVENT_ISSUE_NUMBER=${{ github.event.issue.number }}
+          export REGION=${{ inputs.region }}
+          export RESOURCE_GROUP=$RG_NAME
+          export STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME
+          envsubst < $TEMPLATE_PATH > $FILE_PATH
 
           # Print final file for debugging
           echo "Final contents:"
@@ -94,7 +90,7 @@ jobs:
 
       - name: Push changes
         run: |
-          BRANCH_NAME="create-dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
+          BRANCH_NAME="dev-env-${{ github.actor }}-${{ github.event.issue.number }}"
           git push --set-upstream origin "$BRANCH_NAME"
 
       - name: Create or Update Pull Request
