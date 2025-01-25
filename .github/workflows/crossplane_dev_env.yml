@@ -107,3 +107,5 @@ jobs:
             A new or updated DevEnvironment file for #${{ github.event.issue.number }} has been committed.
             Merging this PR will have ArgoCD pick it up and deploy (or update) the environment.
           draft: false
+          update-branch: false
+          merge-method: merge
