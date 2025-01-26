@@ -1,0 +1,11 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: dev-env-orsharon7-38
+spec:
+  parameters:
+    region: southeastasia
+    resourceGroup: env-orsharon7-38-rg
+    developer: orsharon7
+    issueId: "38"
+    storageAccountName: 6p04oo9ju8motuh5
