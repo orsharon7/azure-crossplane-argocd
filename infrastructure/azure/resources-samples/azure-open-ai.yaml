@@ -2,7 +2,8 @@ apiVersion: cognitiveservices.azure.upbound.io/v1beta1
 kind: Deployment
 metadata:
   labels:
-    testing.upbound.io/example-name: example
+    app: dev-environment
+    developer: orsharon7
   name: text-embedding-ada-002
 spec:
   forProvider:
