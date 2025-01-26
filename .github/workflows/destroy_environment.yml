@@ -6,15 +6,15 @@ on:
     types: [closed]
 
 jobs:
-  destroy:
+  get_issue_details:
     runs-on: self-hosted
     permissions:
       issues: write
+    outputs:
+      app_name: ${{ steps.parse_issue.outputs.app_name }}
+      environment_type: ${{ steps.parse_issue.outputs.environment_type }}
 
     steps:
-      - name: Check if issue is an environment request
-        if: contains(github.event.issue.labels.*.name, 'environment-request')
-        run: echo "Environment request detected for closure"
         
       - name: Comment on Issue with Cleanup Start
         run: |
@@ -22,23 +22,39 @@ jobs:
             -d '{"body": "🌶️ @${{ github.actor }} Environment submitted for deletion."}' \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
 
-
-      - name: Set up Azure CLI with Azure Login v2
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Parse Issue Details
         id: parse_issue
         run: |
           # Extract app_name from the issue body using awk
           body="${{ github.event.issue.body }}"
           app_name=$(echo "$body" | awk '/>>app_name<</{getline; getline; print}')
-          if [[ -z "$app_name" ]]; then
-            echo "Error: Failed to parse app_name." >&2
+          environment_type=$(echo "$body" | awk '/>>environment_type<</{getline; getline; print}')
+
+          if [[ -z "$app_name" || -z "$environment_type" ]]; then
+            echo "Error: Failed to parse issue details." >&2
             exit 1
           fi
           echo "app_name=$app_name" >> $GITHUB_ENV
+          echo "environment_type=$environment_type" >> $GITHUB_ENV
+          
+
+      - name: Comment on Issue with Cleanup Confirmation
+        run: |
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"body": "🗑️ Environment name `${{ env.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted.  "}' \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+  
+  cleanup_azure:
+    needs: get_issue_details
+    runs-on: self-hosted
+    permissions:
+      issues: write
+    if: needs.get_issue_details.outputs.environment_type != 'dev_env'
+    steps:
+      - name: Set up Azure CLI with Azure Login v2
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Find and Delete Resource Group
         run: |
@@ -55,9 +71,57 @@ jobs:
           az group delete --name "$resource_group_name" --yes --no-wait
 
           echo "resource_group_name=$resource_group_name" >> $GITHUB_ENV
+          
+  cleanup_crossplane:
+    needs: get_issue_details
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    if: needs.get_issue_details.outputs.environment_type == 'dev_env'
+    steps:
+      # Step 1: Checkout the repository
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: main
+          fetch-depth: 0
 
-      - name: Comment on Issue with Cleanup Confirmation
+      # Step 2: Set up Git
+      - name: Set up Git
         run: |
-          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"body": "🗑️ Environment name `${{ env.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted.  "}' \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      # Step 3: Set branch name
+      - name: Set branch name
+        id: set_branch_name
+        run: echo "branch_name=delete-dev-env-${{ github.actor }}-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+
+      # Step 4: Create and switch to a new branch
+      - name: Create and switch to a new branch
+        run: |
+          git checkout -b ${{ steps.set_branch_name.outputs.branch_name }}
+      
+      # Step 5: Delete the dev environment yaml file
+      - name: Move to trash DevEnvironment file
+        env:
+            GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
+          DEST_PATH="infrastructure/azure/dev-envs/trash/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
+          mkdir -p "$(dirname $DEST_PATH)"
+          if [ -f "$FILE_PATH" ]; then
+            echo "Deleting DevEnvironment file: $FILE_PATH"
+            mv "$FILE_PATH" "$DEST_PATH"
+            git add .
+            git commit -m "Moved DevEnvironment file for ${{ github.actor }}-${{ github.event.issue.number }}"
+            git push --set-upstream origin ${{ steps.set_branch_name.outputs.branch_name }}
+
+            PR_TITLE="Delete DevEnvironment for ${{ github.actor }}-${{ github.event.issue.number }}"
+            PR_BODY="This PR deletes the DevEnvironment file for ${{ github.actor }}-${{ github.event.issue.number }}. Once approved, the environment will be cleaned up automatically with ArgoCD."
+
+            gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head ${{ steps.set_branch_name.outputs.branch_name }} --repo ${{ github.repository }} --draft=false
+          fi
