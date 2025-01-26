@@ -165,7 +165,7 @@ jobs:
             if [ "${{ needs.provision.outputs.environment_type }}" != "dev_env" ]; then   
               comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
             else
-              comment="✅ Environment provisioning requested. Pull request must be approved to kickoff provisioning with ArgoCD.\\ncc: @${{ github.actor }}"
+              comment="✅ Environment provisioning requested. Pull request must be approved to kickoff provisioning with ArgoCD.\\n\\nOnce approved, The following resource group will be created: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
             fi
           else
             comment="❌ Environment provisioning failed. No deployment was executed.\\ncc: @${{ github.actor }}"
