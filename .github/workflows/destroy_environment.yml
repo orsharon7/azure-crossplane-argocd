@@ -109,7 +109,7 @@ jobs:
             GH_TOKEN: ${{ github.token }}
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
-          DEST_PATH="infrastructure/azure/dev-envs/trash/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
+          DEST_PATH="infrastructure/azure/trash/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
           mkdir -p "$(dirname $DEST_PATH)"
           if [ -f "$FILE_PATH" ]; then
             echo "Deleting DevEnvironment file: $FILE_PATH"
@@ -134,11 +134,17 @@ jobs:
     steps:
       - name: Comment on Issue to Indicate Completion or Failure
         run: |
-          #check environement type and comment accordingly
-          if [[ "${{ needs.get_issue_details.outputs.environment_type }}" == "dev_env" ]]; then
-            comment="🗑️ Dev Environment for @${{ github.actor }} has been submitted for deletion . \n\n 🗑️ Dev Environment file has been moved to trash. \n\n 🔄 A pull request has been created to delete the Dev Environment file."
+          # If *any* of these dependent jobs finished with "success," we consider the deployment succeeded
+          if [ "${{ needs.cleanup_azure.result }}" = "success" ] || \
+              [ "${{ needs.cleanup_crossplane.result }}" = "success" ]; then
+            #check environement type and comment accordingly
+            if [[ "${{ needs.get_issue_details.outputs.environment_type }}" == "dev_env" ]]; then
+              comment="🗑️ Dev Environment for @${{ github.actor }} has been submitted for deletion . \n\n 🗑️ Dev Environment file has been moved to trash. \n\n 🔄 A pull request has been created to delete the Dev Environment file."
+            else
+              comment="🗑️ Environment name `${{ needs.get_issue_details.outputs.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ needs.cleanup_azure.outputs.resource_group_name }}` has been deleted."
+            fi
           else
-            comment="🗑️ Environment name `${{ needs.get_issue_details.outputs.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ needs.cleanup_azure.outputs.resource_group_name }}` has been deleted."
+            comment="❌ Environment cleanup failed. No resources were deleted."
           fi
           # Post the comment back to the GitHub Issue
 
