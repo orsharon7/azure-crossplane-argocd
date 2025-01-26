@@ -121,7 +121,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           PR_TITLE="Dev environment for @${{ github.actor }} (Issue #${{ github.event.issue.number }})"
-          PR_BODY="This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}.
-          
-          Once merged, ArgoCD will deploy or update the environment."
+          PR_BODY="This PR adds a new or updated DevEnvironment file for #${{ github.event.issue.number }}. Once merged, ArgoCD will deploy or update the environment."
           gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head ${{ steps.set_branch_name.outputs.branch_name }} --repo ${{ github.repository }} --draft=false
