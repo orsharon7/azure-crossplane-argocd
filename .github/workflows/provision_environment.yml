@@ -153,7 +153,7 @@ jobs:
           #    - If the environment type was dev_env, we get RG from crossplane_dev_env.yml outputs
           #    - Otherwise, from the "provision" job outputs (the CLI-based creation).
           if [ "${{ needs.provision.outputs.environment_type }}" = "dev_env" ]; then
-            RG_NAME="${{ needs.deploy_dev_env.outputs.crossplane_rg_name }}"
+            RG_NAME="${{ needs.deploy_dev_env.outputs.resource_group_name }}"
           else
             RG_NAME="${{ needs.provision.outputs.resource_group_name }}"
           fi

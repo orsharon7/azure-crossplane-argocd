@@ -28,6 +28,10 @@ on:
       run_id:
         required: true
         type: string
+    outputs:
+      resource_group_name: 
+        description: "The resource group created bt crossplane"  
+        value: ${{ jobs.provision.outputs.resource_group_name }}
 
 jobs:
   provision:
@@ -38,6 +42,7 @@ jobs:
       issues: write
     outputs:
       branch_name: ${{ steps.set_branch_name.outputs.branch_name }}
+      resource_group_name: ${{ steps.create_dev_env.outputs.resource_group }}
 
     steps:
       # Step 1: Checkout the repository
@@ -66,6 +71,7 @@ jobs:
 
       # Step 5: Create or update the DevEnvironment file
       - name: Create or Update DevEnvironment File
+        id: create_dev_env
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
           export TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
@@ -80,6 +86,9 @@ jobs:
 
           echo "Created file at: $FILE_PATH"
           cat "$FILE_PATH"
+
+          # Set the RESOURCE_GROUP as a step output
+          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
 
       # Step 6: Stage and commit the file
       - name: Commit changes
