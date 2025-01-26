@@ -18,8 +18,9 @@ spec:
         apiVersion: azure.upbound.io/v1beta1
         kind: ResourceGroup
         metadata:
-          # We'll patch in the name from spec.parameters.resourceGroup
           name: ""
+          labels:
+            issue-id: ""
         spec:
           deletionPolicy: Delete
           forProvider:
@@ -39,6 +40,9 @@ spec:
           fromFieldPath: "spec.parameters.issueId"
           toFieldPath: "spec.forProvider.tags[issue-id]"
         - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels[issue-id]"
+        - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "metadata.name"
 
@@ -50,8 +54,9 @@ spec:
         apiVersion: network.azure.upbound.io/v1beta2
         kind: VirtualNetwork
         metadata:
-          # Let Crossplane handle name generation or patch if desired
           name: ""
+          labels:
+            issue-id: ""
         spec:
           forProvider:
             addressSpace:
@@ -65,6 +70,9 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "spec.forProvider.resourceGroupName"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels[issue-id]"
 
     # ------------------------------------------------------------------------------
     # 3) Storage Account
@@ -74,8 +82,9 @@ spec:
         apiVersion: storage.azure.upbound.io/v1beta1
         kind: Account
         metadata:
-          # We'll patch in the name from spec.parameters.storageAccountName
           name: ""
+          labels:
+            issue-id: ""
         spec:
           forProvider:
             location: ""
@@ -93,3 +102,67 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.storageAccountName"
           toFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels[issue-id]"
+
+    # ------------------------------------------------------------------------------
+    # 4) Cognitive Services Account
+    # ------------------------------------------------------------------------------
+    - name: cognitive-services-account
+      base:
+        apiVersion: cognitiveservices.azure.upbound.io/v1beta1
+        kind: Account
+        metadata:
+          name: ""
+          labels:
+            issue-id: ""
+        spec:
+          forProvider:
+            kind: OpenAI
+            location: ""
+            resourceGroupName: ""
+            skuName: S0
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.location"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.developer"
+          toFieldPath: "metadata.labels[developer]"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.resourceGroup"
+          toFieldPath: "spec.forProvider.resourceGroupName"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels[issue-id]"
+
+    # ------------------------------------------------------------------------------
+    # 5) Cognitive Services Deployment
+    # ------------------------------------------------------------------------------
+    - name: cognitive-services-deployment
+      base:
+        apiVersion: cognitiveservices.azure.upbound.io/v1beta1
+        kind: Deployment
+        metadata:
+          name: text-embedding-ada-002
+          labels:
+            issue-id: ""
+        spec:
+          forProvider:
+            cognitiveAccountIdSelector:
+              matchLabels:
+                issue-id: ""
+            model:
+              format: OpenAI
+              name: text-embedding-ada-002
+              version: "2"
+            scale:
+              type: Standard
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "spec.forProvider.cognitiveAccountIdSelector.matchLabels.issue-id"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels[issue-id]"
