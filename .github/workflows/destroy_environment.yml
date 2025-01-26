@@ -13,6 +13,7 @@ jobs:
     outputs:
       app_name: ${{ steps.parse_issue.outputs.app_name }}
       environment_type: ${{ steps.parse_issue.outputs.environment_type }}
+      resource_group_name: ${{ steps.cleanup_azure.outputs.resource_group_name }}
 
     steps:
         
@@ -34,8 +35,12 @@ jobs:
             echo "Error: Failed to parse issue details." >&2
             exit 1
           fi
-          echo "app_name=$app_name" >> $GITHUB_ENV
-          echo "environment_type=$environment_type" >> $GITHUB_ENV
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "environment_type=$environment_type" >> $GITHUB_OUTPUT
+
+          # echo detailed to terminal
+          echo "app_name=$app_name"
+          echo "environment_type=$environment_type"
   
   cleanup_azure:
     needs: get_issue_details
@@ -63,7 +68,7 @@ jobs:
           # Delete the resource group
           az group delete --name "$resource_group_name" --yes --no-wait
 
-          echo "resource_group_name=$resource_group_name" >> $GITHUB_ENV
+          echo "resource_group_name=$resource_group_name" >> $GITHUB_OUTPUT
           
   cleanup_crossplane:
     needs: get_issue_details
@@ -133,10 +138,10 @@ jobs:
           if [[ "${{ needs.get_issue_details.outputs.environment_type }}" == "dev_env" ]]; then
             comment="🗑️ Dev Environment for @${{ github.actor }} has been submitted for deletion . \n\n 🗑️ Dev Environment file has been moved to trash. \n\n 🔄 A pull request has been created to delete the Dev Environment file."
           else
-            comment="🗑️ Environment name `${{ needs.get_issue_details.outputs.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted."
+            comment="🗑️ Environment name `${{ needs.get_issue_details.outputs.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ needs.cleanup_azure.outputs.resource_group_name }}` has been deleted."
           fi
           # Post the comment back to the GitHub Issue
-          
+
           curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d "{\"body\": \"$comment\"}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
