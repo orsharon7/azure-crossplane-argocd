@@ -1,9 +1,14 @@
 # Deploy and Configure ArgoCD and Deploy Crossplane with ArgoCD
 
 ```sh
+az aks get-credentials --name <cluster-name> --resource-group <resource-group-name>
+```
+My management cluster:
+```sh
 az aks get-credentials --name orrocrspln-aks --resource-group env-orrocrspln-31-1737614754-rg
 ```
 
+Install ArgoCD on the cluster:
 ```sh
 kubectl apply -k argocd/install
 ```
