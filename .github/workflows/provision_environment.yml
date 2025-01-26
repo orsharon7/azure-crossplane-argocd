@@ -155,14 +155,18 @@ jobs:
           if [ "${{ needs.provision.outputs.environment_type }}" = "dev_env" ]; then
             RG_NAME="${{ needs.deploy_dev_env.outputs.resource_group_name }}"
           else
-            RG_NAME="${{ needs.provision.outputs.resource_group_name }}"
+            RG_NAME="${{ steps.parse_issue.outputs.resource_group_name }}"
           fi
 
           # If *any* of these dependent jobs finished with "success," we consider the deployment succeeded
           if [ "${{ needs.deploy_webapp.result }}" = "success" ] || \
               [ "${{ needs.deploy_aks.result }}" = "success" ] || \
               [ "${{ needs.deploy_dev_env.result }}" = "success" ]; then
-            comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
+            if [ "${{ needs.provision.outputs.environment_type }}" != "dev_env" ]; then   
+              comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
+            else
+              comment="✅ Environment provisioning requested. Pull request must be approved to kickoff provisioning with ArgoCD.\\ncc: @${{ github.actor }}"
+            fi
           else
             comment="❌ Environment provisioning failed. No deployment was executed.\\ncc: @${{ github.actor }}"
           fi
