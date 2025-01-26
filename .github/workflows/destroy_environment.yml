@@ -118,8 +118,8 @@ jobs:
             git commit -m "Moved DevEnvironment file for ${{ github.actor }}-${{ github.event.issue.number }}"
             git push --set-upstream origin ${{ steps.set_branch_name.outputs.branch_name }}
 
-            PR_TITLE="Delete DevEnvironment for ${{ github.actor }}-${{ github.event.issue.number }}"
-            PR_BODY="This PR deletes the DevEnvironment file for ${{ github.actor }}-${{ github.event.issue.number }}. Once approved, the environment will be cleaned up automatically with ArgoCD."
+            PR_TITLE="Delete DevEnvironment for ${{ github.actor }} (Issue #${{ github.event.issue.number }})"
+            PR_BODY="This PR deletes the DevEnvironment file for ${{ github.actor }} (issue #${{ github.event.issue.number }}). Once approved, the environment will be cleaned up automatically with ArgoCD."
 
             gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head ${{ steps.set_branch_name.outputs.branch_name }} --repo ${{ github.repository }} --draft=false
           fi
