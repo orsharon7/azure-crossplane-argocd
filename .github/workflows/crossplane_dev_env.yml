@@ -116,8 +116,3 @@ jobs:
           
           Once merged, ArgoCD will deploy or update the environment."
           gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head ${{ steps.set_branch_name.outputs.branch_name }} --repo ${{ github.repository }} --draft=false
-
-      # Optional: Add a step to verify the pull request was created
-      - name: Verify Pull Request Creation
-        run: |
-          gh pr view --json number,title,headRefName,baseRefName --jq '.'
