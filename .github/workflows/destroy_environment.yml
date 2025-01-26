@@ -36,13 +36,6 @@ jobs:
           fi
           echo "app_name=$app_name" >> $GITHUB_ENV
           echo "environment_type=$environment_type" >> $GITHUB_ENV
-          
-
-      - name: Comment on Issue with Cleanup Confirmation
-        run: |
-          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"body": "🗑️ Environment name `${{ env.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted.  "}' \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
   
   cleanup_azure:
     needs: get_issue_details
@@ -125,3 +118,25 @@ jobs:
 
             gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head ${{ steps.set_branch_name.outputs.branch_name }} --repo ${{ github.repository }} --draft=false
           fi
+
+  comment_completion:
+    needs: [get_issue_details, cleanup_azure, cleanup_crossplane]
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      contents: read
+    if: always()
+    steps:
+      - name: Comment on Issue to Indicate Completion or Failure
+        run: |
+          #check environement type and comment accordingly
+          if [[ "${{ needs.get_issue_details.outputs.environment_type }}" == "dev_env" ]]; then
+            comment="🗑️ Dev Environment for @${{ github.actor }} has been submitted for deletion . \n\n 🗑️ Dev Environment file has been moved to trash. \n\n 🔄 A pull request has been created to delete the Dev Environment file."
+          else
+            comment="🗑️ Environment name `${{ needs.get_issue_details.outputs.app_name }}` has been successfully cleaned up. \n\n ❌ Resource group `${{ env.resource_group_name }}` has been deleted."
+          fi
+          # Post the comment back to the GitHub Issue
+          
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\": \"$comment\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
