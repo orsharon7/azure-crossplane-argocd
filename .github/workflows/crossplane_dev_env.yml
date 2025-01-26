@@ -68,12 +68,12 @@ jobs:
       - name: Create or Update DevEnvironment File
         run: |
           FILE_PATH="infrastructure/azure/dev-envs/dev-env-${{ github.actor }}-${{ github.event.issue.number }}.yaml"
-          TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
-          REGION="${{ inputs.region }}"
-          RESOURCE_GROUP="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
-          STORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
-          GITHUB_EVENT_ISSUE_NUMBER="${{ inputs.issue_number }}"
-          GITHUB_ACTOR="${{ github.actor }}"
+          export TEMPLATE_PATH="infrastructure/azure/resources-samples/dev-env-template.yaml"
+          export REGION="${{ inputs.region }}"
+          export RESOURCE_GROUP="env-${{ github.actor }}-${{ github.event.issue.number }}-rg"
+          export STORAGE_ACCOUNT_NAME="$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 16)"
+          export GITHUB_EVENT_ISSUE_NUMBER="${{ inputs.issue_number }}"
+          export GITHUB_ACTOR="${{ github.actor }}"
           
           mkdir -p "$(dirname "$FILE_PATH")"
           envsubst < "$TEMPLATE_PATH" > "$FILE_PATH"
