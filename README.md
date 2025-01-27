@@ -1,4 +1,4 @@
-![Architecture Diagram](media/atchitecture.png)
+![Architecture Diagram](media/architecture.png)
 
 
 # Deploy and Configure ArgoCD and Deploy Crossplane with ArgoCD
