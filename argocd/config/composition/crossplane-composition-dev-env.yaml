@@ -161,3 +161,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
           toFieldPath: "metadata.labels[issue-id]"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.embeddingDeploymentName"
+          toFieldPath: "metadata.name"

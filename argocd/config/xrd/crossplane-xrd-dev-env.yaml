@@ -32,5 +32,7 @@ spec:
                       type: string
                     storageAccountName:
                       type: string
+                    embeddingDeploymentName:
+                      type: string
   defaultCompositionRef:
     name: azure-dev-environment
