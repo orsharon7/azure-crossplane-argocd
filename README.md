@@ -1,146 +1,241 @@
+# Deploy and Configure ArgoCD and Crossplane on AKS
+
+## Introduction
+This project provides an automated and declarative approach to managing Kubernetes clusters with GitOps principles using ArgoCD and Crossplane. It leverages the App of Apps pattern for scalable and reusable deployment configurations and introduces Crossplane for cloud infrastructure orchestration.
+
+ArgoCD is employed as the GitOps tool to manage and deploy Kubernetes manifests declaratively. Crossplane extends Kubernetes functionality by enabling infrastructure management via Kubernetes APIs.
+
 ![Architecture Diagram](media/architecture.png)
+> **Credit:**
+> This architecture was designed by [Arik Bidny](https://www.linkedin.com/in/arik-bidny).
 
+---
 
-# Deploy and Configure ArgoCD and Deploy Crossplane with ArgoCD
+## Architecture Overview
+The repository implements a multi-layered architecture, facilitating a clear separation between cluster management and workload deployment. Key components include:
 
-```sh
-az aks get-credentials --name <cluster-name> --resource-group <resource-group-name>
-```
-My management cluster:
-```sh
-az aks get-credentials --name orrocrspln-aks --resource-group env-orrocrspln-31-1737614754-rg
-```
+1. **AKS Automatic**: The management cluster is hosted on Azure Kubernetes Service (AKS), benefiting from Azure's managed Kubernetes features, including automatic updates, scaling, and enhanced security. This ensures reliability and reduces operational overhead. Learn more about AKS Automatic [here](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic).
+2. **Management Cluster**: A Kubernetes cluster hosting ArgoCD and Crossplane.
+3. **ArgoCD**: Installed in the management cluster, responsible for syncing configurations from a Git repository.
+4. **Crossplane**: Installed and managed via ArgoCD, used for provisioning cloud resources (e.g., Azure).
+5. **GitOps Workflow**: Declarative application management leveraging ArgoCD's automated sync capabilities.
+6. **App of Apps Pattern**: A hierarchical deployment strategy for managing complex application dependencies.
 
-Install ArgoCD on the cluster:
-```sh
+---
+
+## Repository Structure
+### `argocd/install`
+This directory contains manifests to install ArgoCD on the management cluster. It includes:
+
+1. **Base Install Files**: YAML manifests required for deploying ArgoCD components (server, repo-server, and controller).
+2. **Namespace Definition**: Ensures that the `argocd` namespace is created before deploying the components.
+3. **Kustomization**: A `kustomization.yaml` file that simplifies managing, customizing, and deploying ArgoCD manifests.
+
+To install ArgoCD:
+```bash
 kubectl apply -k argocd/install
 ```
 
-### 1. Patch the argocd-server service to be of type LoadBalancer:
+> **Note:** Ensure that the namespace is applied first if not already present.
 
-```sh
+### `argocd/crossplane-bootstrap`
+This directory includes configuration for deploying Crossplane and its dependencies. We will dive into this in detail later in this guide.
+
+---
+
+## AKS Management Cluster Setup
+To create an AKS cluster, use the following command:
+```bash
+az aks create --resource-group <resource-group-name> --name <cluster-name> --node-count <node-count> --enable-addons monitoring --generate-ssh-keys
+```
+For more details on AKS Automatic, refer to the [Azure documentation](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic).
+
+#### 1. Access AKS Credentials
+Obtain credentials for the AKS cluster:
+
+```bash
+az aks get-credentials --name <cluster-name> --resource-group <resource-group-name>
+```
+
+Example:
+```bash
+az aks get-credentials --name orrocrspln-aks --resource-group env-orrocrspln-31-1737614754-rg
+```
+
+#### 2. Deploy ArgoCD
+Install ArgoCD on the management cluster:
+```bash
+kubectl apply -k argocd/install
+```
+
+Patch the `argocd-server` service to be of type `LoadBalancer`:
+```bash
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 
-### 2. Get the external IP of the argocd-server service:
-
-```sh
+Retrieve the external IP of the ArgoCD server:
+```bash
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
-### 3. Retrieve the initial admin password:
-
-```sh
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+#### 3. Login to ArgoCD CLI
+Retrieve the initial admin password and log in to the ArgoCD CLI:
+```bash
+argocd login $(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}') --username admin --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo) --insecure
 ```
 
-### 4. Login ArgoCD CLI into our argocd-server installed in AKS
+---
 
-```sh
-argocd login $(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}' ; echo) --username admin --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo) --insecure
-```
+## Install Crossplane on Management Cluster with ArgoCD
+Configuring Crossplane with ArgoCD aligns with our GitOps strategy by enabling declarative, automated, and consistent infrastructure management. By managing Crossplane via ArgoCD, we integrate infrastructure provisioning into the same pipeline used for application deployments, reducing complexity and ensuring synchronization between workloads and resources.
 
-or
+ArgoCD's GitOps model ensures:
+- Automated reconciliation of infrastructure state based on Git commits.
+- Standardized resource management across environments.
+- Support for version control and audit trails for all changes.
 
-```sh
-argocd login 172.188.212.150 --username admin --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo) --insecure
-```
+### Steps to Configure Crossplane with ArgoCD
 
-### 5. Create a Secret for the Non-Standard Helm Chart Repository
+#### 1. Create a Secret for the Non-Standard Helm Chart Repository
+This Helm chart needs to be picked up by Argo in a declarative GitOps way. As this is a non-standard Helm Chart, we need to define a Secret:
 
-This Helm chart needs to be picked up by Argo in a declarative GitOps way. But as this is a non-standard Helm Chart, we need to define a Secret first as the docs state: "Non standard Helm Chart repositories have to be registered explicitly. Each repository must have url, type and name fields."
-
-```sh
+```bash
 kubectl apply -f argocd/crossplane-bootstrap/crossplane-helm-secret.yaml
 ```
 
-### 6. Deploy the Crossplane Helm Chart
+#### 2. Deploy the Crossplane Helm Chart
+Using ArgoCD, define the application manifest to deploy the Crossplane Helm Chart:
 
-Now telling ArgoCD where to find our simple Crossplane Helm Chart, we use Argo's Application manifest in `argocd/crossplane-bootstrap/crossplane.yaml`:
-
-```sh
+```bash
 kubectl apply -n argocd -f argocd/crossplane-bootstrap/crossplane.yaml
 ```
+
 > **Note:**
-> 
-> This configuration sets up Crossplane core components to be automatically pruned by ArgoCD.
-> 
-> As the docs state [here](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#crossplane-bootstrap), "Without the `resources-finalizer.argocd.argoproj.io finalizer`, deleting an application will not delete the resources it manages. To perform a cascading delete, you must add the finalizer. See App Deletion."
-> 
-> In other words, if we run `kubectl delete -n argocd -f argocd/crossplane-bootstrap/crossplane.yaml`, Crossplane wouldn't be undeployed as we may think. Only the ArgoCD Application would be deleted, but Crossplane Pods etc. would still be running.
-> 
-> Our Application configures Crossplane core components to be automatically pruned ([Automatic Pruning](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automatic-pruning)) via `automated: prune: true`.
-> 
-> We also use `syncOptions: - CreateNamespace=true` to let Argo create the `crossplane-system` namespace for us automatically.
->
+> - This configuration sets up Crossplane core components to be automatically pruned by ArgoCD.
+> - The configuration includes `syncOptions: - CreateNamespace=true` to automatically create the `crossplane-system` namespace.
+> - See ArgoCD's [documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#crossplane-bootstrap) for more details.
 
-### 7. Create Azure Credentials and Azure Provider Secret
-https://docs.crossplane.io/latest/getting-started/provider-azure/#create-an-azure-service-principal
+#### 3. Create Azure Credentials and Azure Provider Secret
+Follow the Crossplane documentation to create Azure credentials:
 
-```sh
+```bash
 az ad sp create-for-rbac --sdk-auth --role Owner --scopes /subscriptions/<subscription-id> > azure-credentials.json
 ```
 
-```sh
+Create a Kubernetes secret with the credentials:
+
+```bash
 kubectl create secret generic azure-secret -n crossplane-system --from-file=creds=./azure-credentials.json
 ```
 
-### 8. Install Crossplane's Azure Provider with ArgoCD
-
-Our Crossplane Azure providers (Network, Compute, Storage, etc.) reside in `/upbound/provider-azure/provider`. How do we let ArgoCD manage and deploy this to our cluster? The simple way of defining a directory containing Kubernetes manifests is what we're looking for. Therefore, we create a new ArgoCD Application CRD at `/argocd/crossplane-bootstrap/crossplane-provider-azure.yaml` which tells ArgoCD to look in the directory path `/upbound/provider-azure/config`.
-```sh
+#### 4. Install Crossplane's Azure Provider with ArgoCD
+Deploy the Azure provider for Crossplane:
+```bash
 kubectl apply -f argocd/crossplane-bootstrap/crossplane-provider-azure.yaml
 ```
-> **Note:**
-> The crucial point here is to use the syncPolicy.automated flag as described in the docs: https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/. Otherwise the deployment of the Crossplane `upbound-provider-family-azure` will throw an error.
 
-The automated syncPolicy makes sure that child apps are automatically created, synced, and deleted when the manifest is changed.
+This configuration ensures that:
+- Child applications are automatically created, synced, and deleted when manifests are updated.
+- The `resources-finalizer.argocd.argoproj.io` finalizer is applied for proper cascading deletes ([documentation here](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automatic-pruning)).
 
-This flag enables ArgoCD's "true" GitOps feature, where the CI/CD pipeline doesn't deploy themselfes (Push-based GitOps) but only makes a git commit. Then the GitOps operator inside the Kubernetes cluster (here ArgoCD) recognizes the change in the Git repository and deploys the changes to match the state of the repository in the cluster.
+#### 5. Install Crossplane's Azure ProviderConfig with ArgoCD
+The ProviderConfig defines how Crossplane connects to Azure services by referencing the credentials secret. Deploy the ProviderConfig:
 
-We also use the finalizer resources-finalizer.argocd.argoproj.io finalizer like we did with the Crossplane core components so that a `kubectl delete -f` would also undeploy all components of our Provider.
-
-### 9. Install crossplane's Azure provider ProviderConfig with ArgoCD
-
-To get our Provider finally working we also need to create a ProviderConfig accordingly that will tell the Provider where to find it's Azure credentials. 
-To let ArgoCD manage and deploy our ProviderConfig we again create a new ArgoCD Application CRD at [argocd/crossplane-bootstrap/crossplane-provider-azure-config.yaml](https://github.com/orsharon7/sample-app/blob/main/argocd/crossplane-bootstrap/crossplane-provider-azure-config.yaml):
-
-```sh
+```bash
 kubectl apply -f argocd/crossplane-bootstrap/crossplane-provider-azure-config.yaml
 ```
 
 > **Note:**
-> 1. Crossplane resources use the ProviderConfig named default if no specific ProviderConfig is specified, so this ProviderConfig will be the default for all Azure resources.
-> 2. The secretRef.name and secretRef.key has to match the fields of the already created Secret.
->
+> - The `ProviderConfig` defaults to `default` unless otherwise specified.
+> - Ensure the `secretRef.name` and `secretRef.key` match the previously created secret.
 
+---
 
-##  Using ArgoCD's AppOfApps pattern to deploy Crossplane components
-https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/#app-of-apps-pattern
+## Crossplane XRD and Composition
+Crossplane uses two key components to enable Kubernetes-native infrastructure provisioning: **Composite Resource Definitions (XRDs)** and **Compositions**.
 
-While our setup works now and also fully implements the GitOps way, we have a lot of Application files, that need to be applied in a specific order.
+### Composite Resource Definitions (XRDs)
+An XRD is a schema that defines a new composite resource type in Kubernetes. It abstracts complex infrastructure configurations into a single Kubernetes object that developers can use. Learn more about XRDs [here](https://docs.crossplane.io/latest/concepts/composite-resource-definitions/).
 
-Our goal should be a single manifest defining the whole Crossplane setup incl. core, Provider, ProviderConfig etc. in ArgoCD.
-Since deployment order wouldn't be clear and the Provider manifests need to be fully deployed before the ProviderConfig. Otherwise the deployment fails because of missing CRDs.
+#### In Our Case
+The `argocd/config/xrd` directory defines a custom **DevEnvironment XRD**:
+- This XRD encapsulates components like compute, networking, and Azure OpenAI resources, providing developers with an environment identical to production for testing features or fixing bugs.
+- By using XRDs, developers can request these environments via a single Kubernetes object, significantly simplifying and accelerating the process.
 
-###  App of Apps Pattern vs. ApplicationSets
+Commands to view deployed XRDs:
+```bash
+kubectl get xrd -n crossplane-system
+kubectl describe xrd <xrd-name> -n crossplane-system
+```
 
-When managing multiple ArgoCD applications, you have several patterns to choose from. Two prominent options are the App of Apps Pattern and ApplicationSets, with the latter being integrated into the ArgoCD main project starting around version 2.6.
+### Compositions
+A Composition maps an XRD to underlying managed resources, specifying how the composite resource should be provisioned in the cloud. Compositions enable platform engineers to define reusable and standardized templates for infrastructure setups. Learn more about Compositions [here](https://docs.crossplane.io/latest/concepts/compositions/).
 
-TL;DR:
-- **App of Apps Pattern**
-Ideal for cluster bootstrapping (e.g., installing tools like Crossplane), thanks to its SyncWaves support. This feature is highlighted in the ArgoCD cluster-bootstrapping documentation.
-- **ApplicationSets**
-Best for enabling teams to deploy applications in a GitOps model, especially when working with monorepos (e.g., backend, frontend, database). It simplifies workflows by automatically generating Application manifests through its powerful generators (e.g., Git Generator: Directories, Git Generator: Files).
+#### Composition Revisions
+Composition Revisions provide versioning and immutability for Compositions, allowing updates without affecting existing resources. Learn more about Composition Revisions [here](https://docs.crossplane.io/latest/concepts/composition-revisions/).
 
-In our case, we’re focusing on bootstrapping our cluster, which makes the App of Apps Pattern a natural fit.
+#### In Our Case
+The `argocd/config/composition` directory contains the **DevEnvironment Composition**:
+- This Composition maps the DevEnvironment XRD to Azure resources like virtual networks, subnets, storage accounts, and Azure OpenAI instances.
+- Platform engineers can update or add Compositions, which are automatically deployed and tracked via ArgoCD.
 
-```sh
+Commands to view deployed Compositions and their revisions:
+```bash
+kubectl get composition -n crossplane-system
+kubectl describe composition <composition-name> -n crossplane-system
+kubectl get compositionrevision -n crossplane-system
+```
+
+### Automating XRD and Composition Deployment
+To support our strategy, the `argocd/crossplane-bootstrap` directory includes ArgoCD applications configured to monitor the `xrd` and `composition` directories. This setup ensures:
+- New or updated XRDs and Compositions are automatically deployed to the cluster.
+- All changes are tracked in Git, maintaining consistency and visibility.
+
+Example deployment commands:
+```bash
+kubectl apply -f argocd/config/xrd/dev-environment.yaml
+kubectl apply -f argocd/config/composition/dev-environment-composition.yaml
+```
+
+---
+
+## App of Apps Pattern
+The App of Apps pattern is implemented to simplify the management of multiple interdependent ArgoCD applications. This enables hierarchical synchronization of applications:
+
+```bash
 kubectl apply -f argocd/crossplane-bootstrap.yaml
 ```
 
+---
 
-### Deploy Developer Environemnt
-```sh
-kubectl apply -f infrastructure/dev-environemnt.yaml
-```
+## Deployment Workflow
+
+1. Install ArgoCD on the management cluster.
+2. Configure ArgoCD for GitOps:
+   - Create secrets for custom Helm repositories.
+   - Deploy Crossplane and its components via ArgoCD applications.
+3. Leverage the App of Apps pattern for modular and reusable configurations.
+4. Utilize Crossplane to provision and manage Azure cloud resources declaratively.
+5. Implement XRDs and Compositions for custom resource definitions and mappings.
+6. Monitor and troubleshoot applications using ArgoCD's user interface.
+
+---
+
+## Notes from the Platform Engineering Report
+The implementation aligns with key trends highlighted in the "State of Platform Engineering Report Vol. 3," such as:
+
+1. **Platform Orchestration**: Leveraging Crossplane as the orchestrator for infrastructure resources.
+2. **App of Apps**: Facilitating scalable platform adoption through hierarchical deployments.
+3. **Automation and Standardization**: Enabling GitOps principles to reduce manual configuration errors and improve consistency.
+4. **Infrastructure and DevEx Balance**: Supporting both infrastructure provisioning and enhanced developer experience through declarative pipelines.
+
+---
+
+## Key References
+- [Crossplane Documentation](https://docs.crossplane.io/)
+- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [State of Platform Engineering Report](https://platformengineering.org/report)
+
+---
+
+This repository serves as a foundational template for implementing GitOps practices using ArgoCD and Crossplane for Kubernetes-based infrastructure and application management.
