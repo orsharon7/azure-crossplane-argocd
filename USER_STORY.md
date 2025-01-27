@@ -12,7 +12,7 @@
 
 #### **2. The Problem: Developer Needing an Environment (3 minutes)**
 
-"Imagine this: a developer, let’s call her Sarah, has an urgent feature to test. She needs a dev environment. But the DevOps team is swamped. She’s stuck. Frustrated, she pings the team on Teams, sends a few emails, and then waits. Hours turn into days."
+"Consider this scenario: a developer named Sarah has an urgent feature to test. She requires a development environment equipped with Azure OpenAI, embedding capabilities, and a storage account for vectorization testing. However, the DevOps team is overwhelmed with tasks. Consequently, Sarah faces delays. She reaches out to the team via Teams and emails, but the waiting period extends from hours to days."
 
 "Now, Sarah works in a company that’s adopted platform engineering. Instead of waiting, she simply opens a GitHub issue. This simple action eliminates the manual provisioning delays and DevOps bottleneck she used to face. Sarah’s company embraced **GitOps**, a strategy that manages infrastructure and applications using Git as the single source of truth. And that’s where our journey begins."
 
