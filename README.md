@@ -1,4 +1,4 @@
-# Deploy and Configure ArgoCD and Crossplane on AKS
+# Platform Engineering on Azure with Crossplane and ArgoCD
 
 ## Introduction
 This project provides an automated and declarative approach to managing Kubernetes clusters with GitOps principles using ArgoCD and Crossplane. It leverages the App of Apps pattern for scalable and reusable deployment configurations and introduces Crossplane for cloud infrastructure orchestration.
@@ -43,7 +43,7 @@ This directory includes configuration for deploying Crossplane and its dependenc
 
 ---
 
-## AKS Management Cluster Setup
+## AKS Management Cluster Setup - Deploy and Configure ArgoCD and Crossplane on AKS
 To create an AKS cluster, use the following command:
 ```bash
 az aks create --resource-group <resource-group-name> --name <cluster-name> --node-count <node-count> --enable-addons monitoring --generate-ssh-keys
