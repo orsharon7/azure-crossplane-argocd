@@ -18,7 +18,6 @@ spec:
         apiVersion: azure.upbound.io/v1beta1
         kind: ResourceGroup
         metadata:
-          name: ""
           labels:
             issue-id: ""
         spec:
@@ -54,7 +53,6 @@ spec:
         apiVersion: network.azure.upbound.io/v1beta2
         kind: VirtualNetwork
         metadata:
-          name: ""
           labels:
             issue-id: ""
         spec:
@@ -82,7 +80,6 @@ spec:
         apiVersion: storage.azure.upbound.io/v1beta1
         kind: Account
         metadata:
-          name: ""
           labels:
             issue-id: ""
         spec:
@@ -114,7 +111,6 @@ spec:
         apiVersion: cognitiveservices.azure.upbound.io/v1beta1
         kind: Account
         metadata:
-          name: ""
           labels:
             issue-id: ""
         spec:
@@ -145,7 +141,6 @@ spec:
         apiVersion: cognitiveservices.azure.upbound.io/v1beta1
         kind: Deployment
         metadata:
-          name: "text-embedding-ada-002"
           labels:
             issue-id: ""
         spec:
