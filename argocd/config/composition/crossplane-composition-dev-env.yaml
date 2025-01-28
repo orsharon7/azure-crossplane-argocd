@@ -193,7 +193,7 @@ spec:
               - name: default
                 nodeCount: 1
                 upgradeSettings:
-                  maxSurge: 10%
+                  - maxSurge: "10%"
                 vmSize: Standard_D2_v2
             dnsPrefix: ""
             identity:
