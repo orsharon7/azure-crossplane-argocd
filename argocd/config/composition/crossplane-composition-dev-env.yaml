@@ -19,7 +19,7 @@ spec:
         kind: ResourceGroup
         metadata:
           labels:
-            issue-id: ""
+            issueId: ""
         spec:
           deletionPolicy: Delete
           forProvider:
@@ -27,7 +27,7 @@ spec:
             tags:
               provisioner: crossplane
               developer: ""
-              issue-id: ""
+              issueId: ""
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.region"
@@ -37,10 +37,10 @@ spec:
           toFieldPath: "spec.forProvider.tags[developer]"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "spec.forProvider.tags[issue-id]"
+          toFieldPath: "spec.forProvider.tags[issueId]"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issue-id]"
+          toFieldPath: "metadata.labels[issueId]"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "metadata.name"
@@ -54,7 +54,7 @@ spec:
         kind: VirtualNetwork
         metadata:
           labels:
-            issue-id: ""
+            issueId: ""
         spec:
           forProvider:
             addressSpace:
@@ -70,7 +70,7 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issue-id]"
+          toFieldPath: "metadata.labels[issueId]"
 
     # ------------------------------------------------------------------------------
     # 3) Storage Account
@@ -81,7 +81,7 @@ spec:
         kind: Account
         metadata:
           labels:
-            issue-id: ""
+            issueId: ""
         spec:
           forProvider:
             location: ""
@@ -101,7 +101,7 @@ spec:
           toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issue-id]"
+          toFieldPath: "metadata.labels[issueId]"
 
     # ------------------------------------------------------------------------------
     # 4) Cognitive Services Account
@@ -112,7 +112,7 @@ spec:
         kind: Account
         metadata:
           labels:
-            issue-id: ""
+            issueId: ""
         spec:
           forProvider:
             kind: OpenAI
@@ -131,7 +131,7 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issue-id]"
+          toFieldPath: "metadata.labels[issueId]"
 
     # ------------------------------------------------------------------------------
     # 5) Cognitive Services Deployment
@@ -142,25 +142,69 @@ spec:
         kind: Deployment
         metadata:
           labels:
-            issue-id: ""
+            issueId: ""
         spec:
           forProvider:
             cognitiveAccountIdSelector:
               matchLabels:
-                issue-id: ""
+                issueId: ""
             model:
-            - format: OpenAI
-              name: "text-embedding-ada-002"
-              version: "2"
+              - format: OpenAI
+                name: "text-embedding-ada-002"
+                version: "2"
             scale:
-            - type: Standard
+              - type: Standard
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "spec.forProvider.cognitiveAccountIdSelector.matchLabels.issue-id"
+          toFieldPath: "spec.forProvider.cognitiveAccountIdSelector.matchLabels.issueId"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issue-id]"
+          toFieldPath: "metadata.labels[issueId]"
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.parameters.embeddingDeploymentName"
+          fromFieldPath: "spec.parameters.oaiModelName"
+          toFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.oaiModelName"
+          toFieldPath: "spec.forProvider.model[0].name"
+
+    # ------------------------------------------------------------------------------
+    # 6) Kubernetes Cluster
+    # ------------------------------------------------------------------------------
+    - name: kubernetes-cluster
+      base:
+        apiVersion: containerservice.azure.upbound.io/v1beta1
+        kind: KubernetesCluster
+        metadata:
+          labels:
+            issueId: ""
+        spec:
+          forProvider:
+            defaultNodePool:
+              - name: default
+                nodeCount: 1
+                upgradeSettings:
+                  maxSurge: 10%
+                vmSize: Standard_D2_v2
+            dnsPrefix: ""
+            identity:
+              - type: SystemAssigned
+            location: ""
+            resourceGroupName: ""
+          deletionPolicy: Delete
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.issueId"
+          toFieldPath: "metadata.labels.issueId"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.region"
+          toFieldPath: "spec.forProvider.location"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.resourceGroup"
+          toFieldPath: "spec.forProvider.resourceGroupName"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.aksName"
+          toFieldPath: "spec.forProvider.dnsPrefix"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.aksName"
           toFieldPath: "metadata.name"

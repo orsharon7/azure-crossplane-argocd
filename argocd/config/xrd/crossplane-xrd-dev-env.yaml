@@ -32,7 +32,9 @@ spec:
                       type: string
                     storageAccountName:
                       type: string
-                    embeddingDeploymentName:
+                    oaiModelName:
+                      type: string
+                    aksName:
                       type: string
   defaultCompositionRef:
     name: azure-dev-environment
