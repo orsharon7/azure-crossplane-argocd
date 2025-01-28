@@ -111,6 +111,7 @@ spec:
         apiVersion: cognitiveservices.azure.upbound.io/v1beta1
         kind: Account
         metadata:
+          name: ""
           labels:
             issueId: ""
         spec:
@@ -120,6 +121,9 @@ spec:
             resourceGroupName: ""
             skuName: S0
       patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.parameters.oaiResourceName"
+          toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.region"
           toFieldPath: "spec.forProvider.location"
@@ -141,6 +145,7 @@ spec:
         apiVersion: cognitiveservices.azure.upbound.io/v1beta1
         kind: Deployment
         metadata:
+          name: ""
           labels:
             issueId: ""
         spec:
@@ -150,7 +155,7 @@ spec:
                 issueId: ""
             model:
               - format: OpenAI
-                name: "text-embedding-ada-002"
+                name: ""
                 version: "2"
             scale:
               - type: Standard
@@ -166,7 +171,7 @@ spec:
           toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.oaiModelName"
-          toFieldPath: "spec.forProvider.model[0].name"
+          toFieldPath: "spec.forProvider.model.name"
 
     # ------------------------------------------------------------------------------
     # 6) Kubernetes Cluster
@@ -176,6 +181,7 @@ spec:
         apiVersion: containerservice.azure.upbound.io/v1beta1
         kind: KubernetesCluster
         metadata:
+          name: ""
           labels:
             issueId: ""
         spec:

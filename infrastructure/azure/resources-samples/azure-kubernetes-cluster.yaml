@@ -11,7 +11,7 @@ spec:
         nodeCount: 1
         upgradeSettings:
           - maxSurge: 10%
-        vmSize: Standard_D2_v2
+        vmSize: Standard_DS2_v2
     dnsPrefix: crspln-orro-aks
     identity:
       - type: SystemAssigned

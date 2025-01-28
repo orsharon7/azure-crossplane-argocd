@@ -32,6 +32,8 @@ spec:
                       type: string
                     storageAccountName:
                       type: string
+                    oaiResourceName:
+                      type: string
                     oaiModelName:
                       type: string
                     aksName:
