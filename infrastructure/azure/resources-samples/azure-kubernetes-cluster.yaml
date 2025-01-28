@@ -16,9 +16,4 @@ spec:
     identity:
       - type: SystemAssigned
     location: North Europe
-    resourceGroupNameSelector:
-      matchLabels:
-        testing.upbound.io/example-name: example
-
-
-            resourceGroupName: crossplane-lab
+    resourceGroupName: crossplane-lab
