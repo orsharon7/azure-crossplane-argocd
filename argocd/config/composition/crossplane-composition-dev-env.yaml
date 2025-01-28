@@ -163,16 +163,15 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
           toFieldPath: "metadata.labels[issue-id]"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.parameters.oaiModelName"
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: "spec.parameters.oaiModelName"
+              - fromFieldPath: "spec.parameters.issueId"
+            strategy: string
+            string:
+              fmt: "%s-%s"
           toFieldPath: "metadata.name"
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-%s"
-                fmtArgs:
-                  - "%%"
-                  - "spec.parameters.issueId"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.oaiModelName"
           toFieldPath: "spec.forProvider.model[0].name"
@@ -193,11 +192,11 @@ spec:
               - name: default
                 nodeCount: 1
                 upgradeSettings:
-                  - maxSurge: "10%"
+                  maxSurge: "10%"
                 vmSize: Standard_D2_v2
             dnsPrefix: ""
             identity:
-              - type: SystemAssigned
+              type: SystemAssigned
             location: ""
             resourceGroupName: ""
           deletionPolicy: Delete
