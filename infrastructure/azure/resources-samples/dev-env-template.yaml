@@ -9,4 +9,5 @@ spec:
     developer: ${GITHUB_ACTOR}
     issueId: "${GITHUB_EVENT_ISSUE_NUMBER}"
     storageAccountName: ${STORAGE_ACCOUNT_NAME}
-    embeddingDeploymentName: "text-embedding-ada-002"
+    oaiModelName: "text-embedding-ada-002"
+    aksName: "${GITHUB_ACTOR}-${GITHUB_EVENT_ISSUE_NUMBER}-aks"
