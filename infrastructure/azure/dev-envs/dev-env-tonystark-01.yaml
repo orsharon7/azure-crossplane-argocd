@@ -9,4 +9,5 @@ spec:
     developer: tony-stark
     issueId: "456"
     storageAccountName: starkindustries456re
-    embeddingDeploymentName: "text-embedding-ada-002"
+    oaiModelName: "text-embedding-ada-002"
+    aksName: "stark-tower-aks"
