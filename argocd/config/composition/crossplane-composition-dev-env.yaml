@@ -193,7 +193,7 @@ spec:
                 nodeCount: 1
                 upgradeSettings:
                   - maxSurge: "10%"
-                vmSize: Standard_DS2_v3
+                vmSize: Standard_DS2_v2
             dnsPrefix: ""
             identity:
               - type: SystemAssigned
