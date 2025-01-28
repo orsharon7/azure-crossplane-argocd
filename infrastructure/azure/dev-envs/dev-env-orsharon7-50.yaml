@@ -9,3 +9,6 @@ spec:
     developer: orsharon7
     issueId: "50"
     storageAccountName: 7zptkctrit58purn
+    oaiModelName: "text-embedding-ada-002"
+    oaiResourceName: "oai-orsharon7-50"
+    aksName: "orsharon7-50-aks"
