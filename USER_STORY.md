@@ -56,7 +56,7 @@
 
 "This setup employs a multi-layered architecture to separate cluster management from workload deployment. Key components include **AKS Automatic** for managed Kubernetes capabilities, a management cluster for orchestrating workloads, and a GitOps workflow to automate application state reconciliation."
 
-> **Demo Step**: Highlight the App of Apps pattern in the ArgoCD dashboard. Show how different layers of the architecture are managed modularly.
+> **Demo Step**: Highlight the App of Apps pattern in the [ArgoCD dashboard.](https://172.188.212.150/) Show how different layers of the architecture are managed modularly.
 
 "We use the **App of Apps pattern** in ArgoCD for hierarchical deployments. This enables complex applications to be managed modularly while ensuring dependency synchronization. The repository structure is designed for modularity, including directories for `XRDs`, `Compositions`, and `Provider Configurations`. These components are automatically synced by ArgoCD to ensure consistent deployment."
 
