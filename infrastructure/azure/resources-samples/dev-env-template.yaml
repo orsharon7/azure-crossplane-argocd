@@ -10,4 +10,5 @@ spec:
     issueId: "${GITHUB_EVENT_ISSUE_NUMBER}"
     storageAccountName: ${STORAGE_ACCOUNT_NAME}
     oaiModelName: "text-embedding-ada-002"
-    aksName: "${GITHUB_ACTOR}-${GITHUB_EVENT_ISSUE_NUMBER}-aks"
+    oaiResourceName: "oai-${GITHUB_ACTOR}-${GITHUB_EVENT_ISSUE_NUMBER}"
+    aksName: "aks-${GITHUB_ACTOR}-${GITHUB_EVENT_ISSUE_NUMBER}"

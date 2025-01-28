@@ -3,7 +3,6 @@ kind: Composition
 metadata:
   name: azure-dev-environment
 spec:
-  # This Composition configures resources for the DevEnvironment XRD.
   compositeTypeRef:
     apiVersion: dev.azure.upbound.io/v1alpha1
     kind: DevEnvironment
@@ -19,7 +18,7 @@ spec:
         kind: ResourceGroup
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           deletionPolicy: Delete
           forProvider:
@@ -27,7 +26,7 @@ spec:
             tags:
               provisioner: crossplane
               developer: ""
-              issueId: ""
+              issue-id: ""  # Changed to kebab-case
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.region"
@@ -37,10 +36,10 @@ spec:
           toFieldPath: "spec.forProvider.tags[developer]"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "spec.forProvider.tags[issueId]"
+          toFieldPath: "spec.forProvider.tags[issue-id]"  # Changed to kebab-case
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issueId]"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.resourceGroup"
           toFieldPath: "metadata.name"
@@ -54,7 +53,7 @@ spec:
         kind: VirtualNetwork
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           forProvider:
             addressSpace:
@@ -70,7 +69,7 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issueId]"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
 
     # ------------------------------------------------------------------------------
     # 3) Storage Account
@@ -81,7 +80,7 @@ spec:
         kind: Account
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           forProvider:
             location: ""
@@ -101,7 +100,7 @@ spec:
           toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issueId]"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
 
     # ------------------------------------------------------------------------------
     # 4) Cognitive Services Account
@@ -112,7 +111,7 @@ spec:
         kind: Account
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           forProvider:
             kind: OpenAI
@@ -134,7 +133,7 @@ spec:
           toFieldPath: "spec.forProvider.resourceGroupName"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issueId]"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
 
     # ------------------------------------------------------------------------------
     # 5) Cognitive Services Deployment
@@ -145,12 +144,12 @@ spec:
         kind: Deployment
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           forProvider:
             cognitiveAccountIdSelector:
               matchLabels:
-                issueId: ""
+                issue-id: ""  # Changed to kebab-case
             model:
               - format: OpenAI
                 name: ""
@@ -160,16 +159,16 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "spec.forProvider.cognitiveAccountIdSelector.matchLabels.issueId"
+          toFieldPath: "spec.forProvider.cognitiveAccountIdSelector.matchLabels.issue-id"  # Changed to kebab-case
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels[issueId]"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.oaiModelName"
           toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.oaiModelName"
-          toFieldPath: "spec.forProvider.model.name"
+          toFieldPath: "spec.forProvider.model[0].name"  # Corrected to target array index
 
     # ------------------------------------------------------------------------------
     # 6) Kubernetes Cluster
@@ -180,7 +179,7 @@ spec:
         kind: KubernetesCluster
         metadata:
           labels:
-            issueId: ""
+            issue-id: ""  # Changed to kebab-case
         spec:
           forProvider:
             defaultNodePool:
@@ -198,7 +197,7 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.issueId"
-          toFieldPath: "metadata.labels.issueId"
+          toFieldPath: "metadata.labels[issue-id]"  # Changed to kebab-case
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.region"
           toFieldPath: "spec.forProvider.location"
