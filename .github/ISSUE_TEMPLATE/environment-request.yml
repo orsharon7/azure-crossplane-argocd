@@ -25,9 +25,16 @@ body:
       description: "Choose the Azure region for this environment."
       options:
         - eastus
+        - eastus2
+        - northcentralus
+        - southcentralus
+        - centralus
+        - westus
+        - westus3
         - westeurope
         - southeastasia
-        - centralus
+        - swedencentral
+        - australiaeast
 
   - type: dropdown
     id: environment_type
