@@ -12,7 +12,7 @@
 
 #### **2. The Problem: Developer Needing an Environment (3 minutes)**
 
-"Consider this scenario: a developer named Sarah has an urgent feature to test. She requires a development environment equipped with Azure OpenAI, embedding capabilities, and a storage account for vectorization testing. However, the DevOps team is overwhelmed with tasks. Consequently, Sarah faces delays. She reaches out to the team via Teams and emails, but the waiting period extends from hours to days."
+"Imagine this: a developer, let’s call her Sarah, has an urgent feature to test. She needs a dev environment. But the DevOps team is swamped. She’s stuck. Frustrated, she pings the team on Slack, sends a few emails, and then waits. Hours turn into days."
 
 "Now, Sarah works in a company that’s adopted platform engineering. Instead of waiting, she simply opens a GitHub issue. This simple action eliminates the manual provisioning delays and DevOps bottleneck she used to face. Sarah’s company embraced **GitOps**, a strategy that manages infrastructure and applications using Git as the single source of truth. And that’s where our journey begins."
 
@@ -26,7 +26,9 @@
 
 ##### **Step 1: Developer Workflow**
 
-"Sarah opens a GitHub issue, requesting a dev environment. Behind the scenes, a GitHub Action is triggered. This action generates the YAML configuration file needed for her environment. Let’s look at the PR that’s been created."
+"Sarah opens a GitHub issue, requesting a dev environment. Behind the scenes, a GitHub Action is triggered. This action generates the YAML configuration file needed for her environment. Instead of directly applying the file, it creates a **pull request (PR)**. The PR acts as a gate, preventing the accidental creation of unnecessary environments."
+
+"This follows GitOps best practices—every infrastructure change is reviewed before being merged. This avoids developers spamming environment requests and ensures traceability and approval workflows. Let’s look at the PR that’s been created."
 
 > **Demo Step**: Show the GitHub Actions page and highlight the workflow run triggered by the issue. Then, navigate to the pull request and show the YAML file created.
 
@@ -40,11 +42,7 @@
 
 "And just like that, Sarah’s environment is live. SQL databases, Kubernetes clusters, monitoring tools. Everything is set up and ready to go."
 
-> **Demo Step**: Run the following command to verify the resources created by Crossplane:
-> ```bash
-> kubectl get managed
-> ```
-> Highlight these resources in the Azure portal.
+> **Demo Step**: Return to the GitHub issue and show the automated comments confirming the environment is ready.
 
 ---
 
@@ -54,17 +52,33 @@
 
 "At the heart of this process is the **management cluster**, running both ArgoCD and Crossplane. ArgoCD monitors specific directories in the GitHub repository. When it detects changes, it applies them to the Kubernetes cluster. Crossplane, running within Kubernetes, manages Azure resources such as databases, Kubernetes clusters, and monitoring tools."
 
-"This setup employs a multi-layered architecture to separate cluster management from workload deployment. Key components include **AKS Automatic** for managed Kubernetes capabilities, a management cluster for orchestrating workloads, and a GitOps workflow to automate application state reconciliation."
+"One of the main benefits of using Crossplane is that it **treats infrastructure as Kubernetes resources**. Instead of managing cloud resources with external tools or scripts, we define them using **Custom Resources (CRs)** in Kubernetes. These CRs are defined through **Custom Resource Definitions (CRDs)**, which extend Kubernetes' API to allow native management of infrastructure."
 
-> **Demo Step**: Highlight the App of Apps pattern in the [ArgoCD dashboard.](https://172.188.212.150/) Show how different layers of the architecture are managed modularly.
+"Since Crossplane runs as a **Kubernetes-managed resource**, we get automatic lifecycle management. It is declarative, continuously reconciling state. If a resource is accidentally modified manually, Crossplane will correct it and enforce the desired configuration. This removes the need for imperative scripting and manual interventions."
+
+> **Demo Step**: Highlight the App of Apps pattern in the ArgoCD dashboard. Show how different layers of the architecture are managed modularly.
 
 "We use the **App of Apps pattern** in ArgoCD for hierarchical deployments. This enables complex applications to be managed modularly while ensuring dependency synchronization. The repository structure is designed for modularity, including directories for `XRDs`, `Compositions`, and `Provider Configurations`. These components are automatically synced by ArgoCD to ensure consistent deployment."
 
-"For instance, by treating infrastructure components as managed Kubernetes resources, we leverage Kubernetes' reconciliation mechanisms to maintain the desired state, ensuring consistency and reliability."
+"By using Crossplane alongside GitOps, we ensure **full reconciliation and drift correction** without needing additional tooling or external intervention."
 
 ---
 
-#### **5. Closing Thoughts (3 minutes)**
+#### **5. Understanding XRDs and Compositions (Level 300)**
+
+"Now, let’s talk about **XRDs (Composite Resource Definitions)** and **Compositions**. These are fundamental concepts in Crossplane that help us create reusable, scalable infrastructure components."
+
+"An **XRD** is a way to define a new type of infrastructure resource in Kubernetes. Instead of provisioning raw cloud resources, we can create an **abstracted** resource that encapsulates multiple components. For example, a `DevEnvironment` XRD can include a database, a Kubernetes namespace, and an Azure OpenAI instance—bundled into one requestable object."
+
+"A **Composition** maps an XRD to actual resources. It allows us to define **how** an XRD should translate into real infrastructure. This means we can change our implementation details, like switching between SKUs or modifying policies, without affecting developers using the XRD."
+
+"The benefit? **Abstraction, reusability, and consistency.** Developers don’t need to worry about underlying complexities. They simply request an environment, and Crossplane ensures they get a standardized, pre-approved setup."
+
+> **Demo Step**: Show the `DevEnvironment` XRD and its Composition in the GitHub repository.
+
+---
+
+#### **6. Closing Thoughts (3 minutes)**
 
 "Platform engineering with GitOps is about trust. Developers trust that environments are provisioned quickly and securely. DevOps trusts that automation is doing its job without cutting corners."
 

@@ -158,14 +158,17 @@ jobs:
             RG_NAME="${{ steps.parse_issue.outputs.resource_group_name }}"
           fi
 
+          # Construct the Azure Portal link
+          AZURE_PORTAL_LINK="https://portal.azure.com/?feature.customportal=false#@fdpo.onmicrosoft.com/resource/subscriptions/b1e71f02-08ba-4d5a-8422-30fd116c4b3c/resourceGroups/${RG_NAME}/overview"
+
           # If *any* of these dependent jobs finished with "success," we consider the deployment succeeded
           if [ "${{ needs.deploy_webapp.result }}" = "success" ] || \
               [ "${{ needs.deploy_aks.result }}" = "success" ] || \
               [ "${{ needs.deploy_dev_env.result }}" = "success" ]; then
             if [ "${{ needs.provision.outputs.environment_type }}" != "dev_env" ]; then   
-              comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
+              comment="✅ Environment provisioning completed...\\n\\nResource group name: \`${RG_NAME}\`\\n[View in Azure Portal](${AZURE_PORTAL_LINK})\\ncc: @${{ github.actor }}"
             else
-              comment="✅ Environment provisioning requested. Pull request must be approved to kickoff provisioning with ArgoCD.\\n\\nOnce approved, The following resource group will be created: \`${RG_NAME}\`\\ncc: @${{ github.actor }}"
+              comment="👨‍💻 Environment provisioning requested. Pull request must be approved to kickoff provisioning with ArgoCD.\\n\\nOnce approved, The following resource group will be created: \`${RG_NAME}\`\\n[View in Azure Portal](${AZURE_PORTAL_LINK})\\ncc: @${{ github.actor }}"
             fi
           else
             comment="❌ Environment provisioning failed. No deployment was executed.\\ncc: @${{ github.actor }}"
