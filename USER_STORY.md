@@ -144,3 +144,9 @@ kubectl describe managed azure.database.sqlserver
 
 > **Demo Step**: Return to the GitHub issue and show the automated comments confirming the environment is ready. Tie it back to the developer’s experience.
 
+---
+
+### Close
+"And that's it for the technical side! We've covered how GitOps, ArgoCD, and Crossplane work together to create a fully automated, self-service infrastructure pipeline. By shifting left and treating infrastructure as code, we empower developers while maintaining security and consistency.
+
+Thank you all for joining me today. I hope this session gave you valuable insights into platform engineering and how you can bring these practices into your own workflows."
