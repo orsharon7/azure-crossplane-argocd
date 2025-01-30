@@ -22,7 +22,17 @@ The repository implements a multi-layered architecture, facilitating a clear sep
 6. **App of Apps Pattern**: A hierarchical deployment strategy for managing complex application dependencies.
 
 ---
+## Developer Experience
 
+1. **Request**: Developer submits a GitHub issue to request a dev environment. This action triggers a GitHub Action that generates the necessary YAML configuration and opens a pull request (PR).
+2. **Review**: The PR undergoes a review process. Upon approval and merge, ArgoCD detects the changes and applies the configuration.
+3. **Provision**: Crossplane interprets the YAML and provisions the required Azure resources. Automated notifications inform the developer when the environment is ready.
+4. **Cleanup**: Upon issue closure or PR deletion, ArgoCD and Crossplane automatically deprovision the resources, ensuring efficient resource management.
+
+This GitOps-driven workflow minimizes manual intervention, accelerates environment provisioning, and maintains infrastructure consistency.
+![Github Issue Imange](media/gh-issue.png)
+
+---
 ## Repository Structure
 ### `argocd/install`
 This directory contains manifests to install ArgoCD on the management cluster. It includes:
