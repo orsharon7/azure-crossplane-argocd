@@ -19,9 +19,12 @@ jobs:
         
       - name: Comment on Issue with Cleanup Start
         run: |
+          run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          comment="🌶️ @${{ github.actor }} Environment submitted for deletion. \\n Actions workflow logs can be accessed [here]($run_url)."
           curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"body": "🌶️ @${{ github.actor }} Environment submitted for deletion."}' \
+            -d "{\"body\": \"$comment\"}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments"
+
 
       - name: Parse Issue Details
         id: parse_issue
