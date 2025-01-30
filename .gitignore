@@ -4,3 +4,4 @@ argocd/azure-credentials.json
 dev-environment*
 archive/
 archive/*
+media/USER_STORY.md
