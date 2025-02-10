@@ -1,5 +1,8 @@
 # Platform Engineering on Azure with Crossplane and ArgoCD
 
+## Live Session
+You can watch the live [video session](https://info.microsoft.com/EM-AzureAI-VDEO-FY25-02Feb-01-On-Demand-event-Platform-Engineering-with-GitHub-SRGCM13684_LP02-Thank-You---Standard-Hero.html) here!
+
 ## Introduction
 This project provides an automated and declarative approach to managing Kubernetes clusters with GitOps principles using ArgoCD and Crossplane. It leverages the App of Apps pattern for scalable and reusable deployment configurations and introduces Crossplane for cloud infrastructure orchestration.
 
