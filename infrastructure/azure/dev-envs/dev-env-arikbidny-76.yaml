@@ -1,0 +1,14 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: dev-env-arikbidny-76
+spec:
+  parameters:
+    region: eastus
+    resourceGroup: rg-arikbidny-76
+    developer: arikbidny
+    issueId: "76"
+    storageAccountName: k9rmfllh84g8xjhi
+    oaiModelName: "text-embedding-ada-002"
+    oaiResourceName: "oai-arikbidny-76"
+    aksName: "aks-arikbidny-76"
