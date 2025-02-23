@@ -1,4 +1,4 @@
-name: Provision Environment on Issue Open via ArgoCD Crossplane
+name: Provision Dev Env via ArgoCD Crossplane
 run-name: Provision or Update Dev Env on Issue ${{ github.event.issue.number }} for ${{ github.actor }}
 
 on:
