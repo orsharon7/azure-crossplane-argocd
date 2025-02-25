@@ -1,0 +1,14 @@
+apiVersion: dev.azure.upbound.io/v1alpha1
+kind: DevEnvironment
+metadata:
+  name: dev-env-orsharon7-87
+spec:
+  parameters:
+    region: eastus
+    resourceGroup: rg-orsharon7-87
+    developer: orsharon7
+    issueId: "87"
+    storageAccountName: 4nlyafk6wh2tex4b
+    oaiModelName: "text-embedding-ada-002"
+    oaiResourceName: "oai-orsharon7-87"
+    aksName: "aks-orsharon7-87"
